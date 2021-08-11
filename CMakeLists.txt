@@ -26,7 +26,7 @@ endif()
 FetchContent_Declare(
     pivot
     GIT_REPOSITORY https://github.com/EIP-Pivot/game-engine.git
-    GIT_TAG f8dfb18e74126350a71f5a069b2a9ed70551d9c0
+    GIT_TAG 19af98d3fdfd815db93267972952749e65dd22c7
 )
 if (NOT pivot_POPULATED)
     message(STATUS "Populating pivot")
