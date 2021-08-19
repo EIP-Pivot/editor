@@ -4,97 +4,67 @@
 #include <pivot/graphics/VulkanApplication.hxx>
 #include <pivot/graphics/vk_utils.hxx>
 
+#include <Logger.hpp>
+
+#include "Scene.hxx"
+
 Logger *logger = nullptr;
 
 class Application : public VulkanApplication
 {
 public:
-    void draw(float fElapsedTime) final
+    Application(): VulkanApplication(), camera(glm::vec3(0, 10, 0)){};
+
+    static void keyboard_callback(GLFWwindow *win, int key, int, int action, int)
     {
-        auto &frame = frames[currentFrame];
-        uint32_t imageIndex;
+        auto *eng = (Application *)glfwGetWindowUserPointer(win);
 
-        VK_TRY(vkWaitForFences(device, 1, &frame.inFlightFences, VK_TRUE, UINT64_MAX));
-        VK_TRY(vkAcquireNextImageKHR(device, swapchain.getSwapchain(), UINT64_MAX, frame.imageAvailableSemaphore,
-                                     nullptr, &imageIndex));
-
-        auto &cmd = commandBuffers[imageIndex];
-
-        VK_TRY(vkResetFences(device, 1, &frame.inFlightFences));
-        VK_TRY(vkResetCommandBuffer(cmd, 0));
-        VkSemaphore waitSemaphores[] = {frame.imageAvailableSemaphore};
-        VkPipelineStageFlags waitStages[] = {VK_PIPELINE_STAGE_COLOR_ATTACHMENT_OUTPUT_BIT};
-        VkSemaphore signalSemaphores[] = {frame.renderFinishedSemaphore};
-
-        VkSubmitInfo submitInfo{
-            .sType = VK_STRUCTURE_TYPE_SUBMIT_INFO,
-            .pNext = nullptr,
-            .waitSemaphoreCount = 1,
-            .pWaitSemaphores = waitSemaphores,
-            .pWaitDstStageMask = waitStages,
-            .commandBufferCount = 1,
-            .pCommandBuffers = &cmd,
-            .signalSemaphoreCount = 1,
-            .pSignalSemaphores = signalSemaphores,
-        };
-
-        VkCommandBufferBeginInfo beginInfo{
-            .sType = VK_STRUCTURE_TYPE_COMMAND_BUFFER_BEGIN_INFO,
-            .pNext = nullptr,
-            .flags = 0,
-            .pInheritanceInfo = nullptr,
-        };
-
-        std::array<VkClearValue, 2> clearValues{};
-        clearValues.at(0).color = {{0.0f, 0.0f, 0.0f, 0.0f}};
-        clearValues.at(1).depthStencil = {1.0f, 0};
-
-        VkDeviceSize offsets = 0;
-        VkRenderPassBeginInfo renderPassInfo{
-            .sType = VK_STRUCTURE_TYPE_RENDER_PASS_BEGIN_INFO,
-            .renderPass = renderPass,
-            .framebuffer = swapChainFramebuffers[imageIndex],
-            .renderArea =
-                {
-                    .offset = {0, 0},
-                    .extent = swapchain.getSwapchainExtent(),
-                },
-            .clearValueCount = static_cast<uint32_t>(clearValues.size()),
-            .pClearValues = clearValues.data(),
-        };
-        auto gpuCamera = camera.getGPUCameraData(80, swapchain.getAspectRatio());
-
-        VK_TRY(vkBeginCommandBuffer(cmd, &beginInfo));
-        vkCmdBindPipeline(cmd, VK_PIPELINE_BIND_POINT_GRAPHICS, graphicsPipeline);
-        vkCmdBindDescriptorSets(cmd, VK_PIPELINE_BIND_POINT_GRAPHICS, pipelineLayout, 0, 1,
-                                &frame.data.objectDescriptor, 0, nullptr);
-        vkCmdBindDescriptorSets(cmd, VK_PIPELINE_BIND_POINT_GRAPHICS, pipelineLayout, 1, 1, &texturesSet, 0, nullptr);
-        vkCmdPushConstants(cmd, pipelineLayout, VK_SHADER_STAGE_VERTEX_BIT | VK_SHADER_STAGE_FRAGMENT_BIT, 0,
-                           sizeof(gpuCamera), &gpuCamera);
-        vkCmdBindVertexBuffers(cmd, 0, 1, &vertexBuffers.buffer, &offsets);
-        vkCmdBindIndexBuffer(cmd, indicesBuffers.buffer, 0, VK_INDEX_TYPE_UINT32);
-        vkCmdBeginRenderPass(cmd, &renderPassInfo, VK_SUBPASS_CONTENTS_INLINE);
-        {
+        switch (action) {
+            case GLFW_PRESS: {
+                switch (key) {
+                    case GLFW_KEY_ESCAPE: glfwSetWindowShouldClose(win, true); break;
+                    case GLFW_KEY_LEFT_ALT: {
+                        if (eng->bInteractWithUi) {
+                            glfwSetInputMode(win, GLFW_CURSOR, GLFW_CURSOR_DISABLED);
+                            eng->bInteractWithUi = false;
+                            eng->bFirstMouse = true;
+                        } else {
+                            glfwSetInputMode(win, GLFW_CURSOR, GLFW_CURSOR_NORMAL);
+                            eng->bInteractWithUi = true;
+                        }
+                    } break;
+                    default: break;
+                }
+            } break;
+            default: break;
         }
-        vkCmdEndRenderPass(cmd);
-        VK_TRY(vkEndCommandBuffer(cmd));
-        VK_TRY(vkQueueSubmit(graphicsQueue, 1, &submitInfo, frame.inFlightFences));
-
-        VkPresentInfoKHR presentInfo{
-            .sType = VK_STRUCTURE_TYPE_PRESENT_INFO_KHR,
-            .pNext = nullptr,
-            .waitSemaphoreCount = 1,
-            .pWaitSemaphores = signalSemaphores,
-            .swapchainCount = 1,
-            .pSwapchains = &(swapchain.getSwapchain()),
-            .pImageIndices = &imageIndex,
-            .pResults = nullptr,
-        };
-        VK_TRY(vkQueuePresentKHR(presentQueue, &presentInfo));
-        currentFrame = (currentFrame + 1) % MAX_FRAME_FRAME_IN_FLIGHT;
     }
 
-private:
+    static void cursor_callback(GLFWwindow *win, double xpos, double ypos)
+    {
+        auto *eng = (Application *)glfwGetWindowUserPointer(win);
+        if (eng->bInteractWithUi) return;
+
+        if (eng->bFirstMouse) {
+            eng->lastX = xpos;
+            eng->lastY = ypos;
+            eng->bFirstMouse = false;
+        }
+        auto xoffset = xpos - eng->lastX;
+        auto yoffset = eng->lastY - ypos;
+
+        eng->lastX = xpos;
+        eng->lastY = ypos;
+        eng->camera.processMouseMovement(xoffset, yoffset);
+    }
+
+public:
+    float lastX;
+    float lastY;
+
+    bool bInteractWithUi = false;
+    bool bFirstMouse = true;
+    Scene scene;
     Camera camera;
 };
 
@@ -103,16 +73,53 @@ int main()
     logger = new Logger(std::cout);
     logger->start();
 
-    Window win("Wulkan", 500, 500);
+    Window win("Wulkan", 800, 600);
     Application app;
 
-    app.load3DModels({"../assets/viking_room.obj"});
-    app.loadTexturess({"../assets/viking_room.png"});
+    win.setUserPointer(&app);
+    win.captureCursor(true);
+    win.setCursorPosCallback(Application::cursor_callback);
+    win.setKeyCallback(Application::keyboard_callback);
+    app.scene.obj.push_back(RenderObject{
+        .meshID = "viking_room",
+        .objectInformation =
+            {
+                .transform =
+                    {
+                        .translation = glm::vec3(-10.0f, 2.f, 0.0f),
+                        .rotation = glm::vec3(0.f),
+                        .scale = glm::vec3(4.f),
+                    },
+                .textureIndex = 0,
+            },
+    });
+    app.scene.obj.push_back({
+        .meshID = "plane",
+        .objectInformation =
+            {
+                .transform =
+                    {
+                        .translation = glm::vec3(0.0f, 0.0f, 0.0f),
+                        .rotation = glm::vec3(0, 0, 0),
+                        .scale = glm::vec3(1.0f),
+                    },
+                .textureIndex = 1,
+            },
+    });
+    app.load3DModels({"../assets/viking_room.obj", "../assets/plane.obj"});
+    app.loadTexturess({"../assets/viking_room.png", "../assets/greystone.png"});
     app.init(win);
     while (!win.shouldClose()) {
         win.pollEvent();
-        app.draw(0);
+        if (!app.bInteractWithUi) {
+            if (win.isKeyPressed(GLFW_KEY_W)) app.camera.processKeyboard(Camera::FORWARD);
+            if (win.isKeyPressed(GLFW_KEY_S)) app.camera.processKeyboard(Camera::BACKWARD);
+            if (win.isKeyPressed(GLFW_KEY_D)) app.camera.processKeyboard(Camera::RIGHT);
+            if (win.isKeyPressed(GLFW_KEY_A)) app.camera.processKeyboard(Camera::LEFT);
+            if (win.isKeyPressed(GLFW_KEY_SPACE)) app.camera.processKeyboard(Camera::UP);
+            if (win.isKeyPressed(GLFW_KEY_LEFT_SHIFT)) app.camera.processKeyboard(Camera::DOWN);
+        }
+        app.draw(app.scene, app.camera, 0);
     }
-
     return 0;
 }

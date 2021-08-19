@@ -26,12 +26,15 @@ endif()
 FetchContent_Declare(
     pivot
     GIT_REPOSITORY https://github.com/EIP-Pivot/game-engine.git
-    GIT_TAG 19af98d3fdfd815db93267972952749e65dd22c7
+    GIT_TAG dc7a75a5fa2c213466a76c2958148045cb5363fd
 )
 if (NOT pivot_POPULATED)
     message(STATUS "Populating pivot")
     FetchContent_Populate(pivot)
     add_subdirectory(${pivot_SOURCE_DIR} ${pivot_BINARY_DIR})
+    target_compile_definitions(pivot-graphics PUBLIC
+        -DMAX_PROJECTION_LIMIT=1000.0f
+    )
 endif()
 
 add_executable(${PROJECT_NAME} source/main.cxx
