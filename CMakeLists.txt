@@ -1,19 +1,13 @@
-cmake_minimum_required(VERSION 3.11)
+cmake_minimum_required(VERSION 3.20)
 project(user-interface)
 
 include(FetchContent)
 
-find_package(Vulkan REQUIRED)
-
-set(CC clang)
-set(CXX clang++)
 set(CMAKE_CXX_STANDARD 20)
 set(CMAKE_CXX_STANDARD_REQUIRED ON)
 
-
 message(STATUS "Looking for lld")
 find_program(LLD_FOUND lld)
-
 if (LLD_FOUND)
     message(STATUS "Looking for lld - found")
     set(CMAKE_C_LINKER_FLAGS "-fuse-ld=lld")
@@ -25,23 +19,20 @@ endif()
 
 FetchContent_Declare(
     pivot
-    GIT_REPOSITORY https://github.com/EIP-Pivot/game-engine.git
-    GIT_TAG dc7a75a5fa2c213466a76c2958148045cb5363fd
+    GIT_REPOSITORY https://github.com/EIP-Pivot/pivot.git
+    GIT_TAG c5939d77262444ec9f1925e387b3c0e4ab58c992
 )
 if (NOT pivot_POPULATED)
     message(STATUS "Populating pivot")
     FetchContent_Populate(pivot)
     add_subdirectory(${pivot_SOURCE_DIR} ${pivot_BINARY_DIR})
     target_compile_definitions(pivot-graphics PUBLIC
-        -DMAX_PROJECTION_LIMIT=1000.0f
+        MAX_PROJECTION_LIMIT=1000.0f
     )
 endif()
 
-add_executable(${PROJECT_NAME} source/main.cxx
-                               source/Window.cxx
-)
+add_executable(${PROJECT_NAME} source/main.cxx)
 
 target_include_directories(${PROJECT_NAME} PRIVATE include/)
 
-target_link_libraries(${PROJECT_NAME} PRIVATE Vulkan::Vulkan)
 target_link_libraries(${PROJECT_NAME} PRIVATE pivot-ecs pivot-graphics)
