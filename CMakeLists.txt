@@ -17,12 +17,13 @@ else()
     message(STATUS "Looking for lld - not found")
 endif()
 
+
 set(LOCAL_PIVOT_DIRECTORY "" CACHE STRING "Path to a local copy of the Pivot game engine sources")
 if (LOCAL_PIVOT_DIRECTORY STREQUAL "")
     FetchContent_Declare(
         pivot
         GIT_REPOSITORY https://github.com/EIP-Pivot/pivot.git
-        GIT_TAG c5939d77262444ec9f1925e387b3c0e4ab58c992
+        GIT_TAG 8aa40630f920e9c8efb8627878ecbb20b6968c16
     )
     if (NOT pivot_POPULATED)
         message(STATUS "Populating pivot")
