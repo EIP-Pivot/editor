@@ -17,15 +17,23 @@ else()
     message(STATUS "Looking for lld - not found")
 endif()
 
-FetchContent_Declare(
-    pivot
-    GIT_REPOSITORY https://github.com/EIP-Pivot/pivot.git
-    GIT_TAG c5939d77262444ec9f1925e387b3c0e4ab58c992
-)
-if (NOT pivot_POPULATED)
-    message(STATUS "Populating pivot")
-    FetchContent_Populate(pivot)
-    add_subdirectory(${pivot_SOURCE_DIR} ${pivot_BINARY_DIR})
+set(LOCAL_PIVOT_DIRECTORY "" CACHE STRING "Path to a local copy of the Pivot game engine sources")
+if (LOCAL_PIVOT_DIRECTORY STREQUAL "")
+    FetchContent_Declare(
+        pivot
+        GIT_REPOSITORY https://github.com/EIP-Pivot/pivot.git
+        GIT_TAG c5939d77262444ec9f1925e387b3c0e4ab58c992
+    )
+    if (NOT pivot_POPULATED)
+        message(STATUS "Populating pivot")
+        FetchContent_Populate(pivot)
+        add_subdirectory(${pivot_SOURCE_DIR} ${pivot_BINARY_DIR})
+        target_compile_definitions(pivot-graphics PUBLIC
+            MAX_PROJECTION_LIMIT=1000.0f
+        )
+    endif()
+else()
+    add_subdirectory(${LOCAL_PIVOT_DIRECTORY} ${CMAKE_BINARY_DIR}/game-engine)
     target_compile_definitions(pivot-graphics PUBLIC
         MAX_PROJECTION_LIMIT=1000.0f
     )
