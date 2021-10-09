@@ -23,7 +23,7 @@ if (LOCAL_PIVOT_DIRECTORY STREQUAL "")
     FetchContent_Declare(
         pivot
         GIT_REPOSITORY https://github.com/EIP-Pivot/pivot.git
-        GIT_TAG 8aa40630f920e9c8efb8627878ecbb20b6968c16
+        GIT_TAG 5d7ed5155ad07fbd0457dce0a8eb4fd25cc374a4
     )
     if (NOT pivot_POPULATED)
         message(STATUS "Populating pivot")
@@ -40,7 +40,7 @@ else()
     )
 endif()
 
-add_executable(${PROJECT_NAME} source/main.cxx)
+add_executable(${PROJECT_NAME} source/main.cxx source/Systems/RenderableSystem.cxx)
 
 target_include_directories(${PROJECT_NAME} PRIVATE include/)
 
