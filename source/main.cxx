@@ -362,9 +362,6 @@ public:
             ImGui::NewFrame();
             ImGui::Begin("Entity");
             for (uint32_t i = 0; i < gSceneManager.getCurrentLevel().getLivingEntityCount(); i++) {
-                for (auto &component: gSceneManager.getCurrentLevel().getComponentsTypes()) {
-                    std::cout << component.first << " " << std::to_string(component.second) << std::endl;
-                }
                 if (ImGui::TreeNode(gSceneManager.getCurrentLevel().GetComponent<Tag>(i).name.c_str())) {
                     
                     ImGui::TreePop();
