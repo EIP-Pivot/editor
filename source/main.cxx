@@ -36,6 +36,10 @@
 
 Logger *logger = nullptr;
 
+const std::vector<glm::vec3> viking_room_positions{
+    {-10.0f, 2.f, 0.0f}, {-20.0f, 2.f, 0.0f}, {-30.0f, 2.f, 0.0f}, {-40.0f, 2.f, 0.0f}, {-50.0f, 2.f, 0.0f},
+};
+
 class Application : public VulkanApplication
 {
 public:
@@ -56,12 +60,13 @@ public:
         std::uniform_int_distribution<int> randTexture(0, textures.size() - 1);
         auto newEntity = entity.addEntity();
         if (newEntity == 1997)
-            gSceneManager.getCurrentLevel().GetComponent<Tag>(newEntity).name = "Best Entity = " + std::to_string(newEntity);
+            gSceneManager.getCurrentLevel().GetComponent<Tag>(newEntity).name =
+                "Best Entity = " + std::to_string(newEntity);
         else
             gSceneManager.getCurrentLevel().GetComponent<Tag>(newEntity).name = "Entity " + std::to_string(newEntity);
         componentEditor.addComponent<Gravity>(newEntity, {
-                        .force = glm::vec3(0.0f, randGravity(generator), 0.0f),
-                    });
+                                                             .force = glm::vec3(0.0f, randGravity(generator), 0.0f),
+                                                         });
         componentEditor.addComponent<RigidBody>(
             newEntity,
             {
@@ -71,15 +76,16 @@ public:
         glm::vec3 position = glm::vec3(randPositionXZ(generator), randPositionY(generator), randPositionXZ(generator));
         glm::vec3 rotation = glm::vec3(randRotation(generator), randRotation(generator), randRotation(generator));
         glm::vec3 scale = glm::vec3(randScale(generator));
-        componentEditor.addComponent<RenderObject>(newEntity, {
-                        .meshID = object,
-                        .objectInformation =
-                            {
-                                .transform = Transform(position, rotation, scale),
-                                .textureIndex = textures[randTexture(generator)],
-                                .materialIndex = "white",
-                            },
-                    });
+        componentEditor.addComponent<RenderObject>(newEntity,
+                                                   {
+                                                       .meshID = object,
+                                                       .objectInformation =
+                                                           {
+                                                               .transform = Transform(position, rotation, scale),
+                                                               .textureIndex = textures[randTexture(generator)],
+                                                               .materialIndex = "white",
+                                                           },
+                                                   });
     }
 
     void DemoScene()
@@ -132,6 +138,9 @@ public:
         window.setKeyPressCallback(Window::Key::A, key_lambda_press);
         window.setKeyPressCallback(Window::Key::SPACE, key_lambda_press);
         window.setKeyPressCallback(Window::Key::LEFT_SHIFT, key_lambda_press);
+        window.setKeyPressCallback(Window::Key::C, [this](Window &window, const Window::Key key) {
+            this->culling_camera_follows_camera = !this->culling_camera_follows_camera;
+        });
         // Release action
         window.setKeyReleaseCallback(Window::Key::W, key_lambda_release);
         window.setKeyReleaseCallback(Window::Key::S, key_lambda_release);
@@ -174,8 +183,7 @@ public:
             imGuiManager.newFrame();
 
             editor.create();
-            if (!editor.getRun())
-            {
+            if (!editor.getRun()) {
                 editor.setAspectRatio(getAspectRatio());
                 entity.create();
                 entity.hasSelected() ? componentEditor.create(entity.getEntitySelected()) : componentEditor.create();
@@ -185,14 +193,15 @@ public:
                     gSceneManager.getCurrentLevel().hasComponent<RenderObject>(entity.getEntitySelected())) {
                     editor.DisplayGuizmo(entity.getEntitySelected());
                 }
-            }
-            else {
+            } else {
                 gSceneManager.getCurrentLevel().Update(dt);
             }
 
             imGuiManager.render();
 
-            draw(componentEditor.getObject(), camera.getGPUCameraData(80.f, getAspectRatio()));
+            if (culling_camera_follows_camera) culling_camera = camera;
+            draw(componentEditor.getObject(), camera.getGPUCameraData(80.f, getAspectRatio()),
+                 std::make_optional(culling_camera.getGPUCameraData(80.f, getAspectRatio())));
             fpsLimiter.sleep();
             auto stopTime = std::chrono::high_resolution_clock::now();
             dt = std::chrono::duration<float>(stopTime - startTime).count();
@@ -206,11 +215,13 @@ public:
     ComponentEditor componentEditor;
     SystemsEditor systemsEditor;
     Camera &camera;
+    Camera culling_camera;
     glm::dvec2 last;
 
     bool bFirstMouse = true;
     std::bitset<UINT16_MAX> button;
     int gridSize;
+    bool culling_camera_follows_camera = true;
 };
 
 int main()

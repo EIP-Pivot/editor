@@ -23,7 +23,7 @@ if (LOCAL_PIVOT_DIRECTORY STREQUAL "")
     FetchContent_Declare(
         pivot
         GIT_REPOSITORY https://github.com/EIP-Pivot/pivot.git
-        GIT_TAG a23421968706378decc9168d96552d6fea0cf0cc
+        GIT_TAG d20262643dad246ebad60d7706c36f81c121fda2
     )
     if (NOT pivot_POPULATED)
         message(STATUS "Populating pivot")
