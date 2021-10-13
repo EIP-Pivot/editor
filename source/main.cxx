@@ -15,7 +15,6 @@
 #include <pivot/ecs/Systems/PhysicsSystem.hxx>
 #include <pivot/ecs/ecs.hxx>
 
-
 #include <Logger.hpp>
 
 #include "Components/Renderable.hxx"
@@ -28,12 +27,108 @@
 #include <backends/imgui_impl_glfw.h>
 #include <backends/imgui_impl_vulkan.h>
 
+#include <ImGuizmo.h>
+
+#include <glm/gtc/quaternion.hpp>
+#include <glm/gtc/type_ptr.hpp>
+#include <glm/gtx/quaternion.hpp>
+
 Logger *logger = nullptr;
+
+template <typename T>
+void printImGui(const T &);
+
+template <>
+void printImGui(const Tag &tag)
+{
+    std::cout << tag.name << std::endl;
+}
 
 class Application : public VulkanApplication
 {
 public:
     Application(): VulkanApplication(){};
+
+    void addRandomObject(std::string object)
+    {
+        std::array<std::string, 8> textures = {"rouge", "vert", "bleu", "cyan", "orange", "jaune", "blanc", "violet"};
+        std::random_device generator;
+        std::uniform_real_distribution<float> randPositionY(0.0f, 50.0f);
+        std::uniform_real_distribution<float> randPositionXZ(-50.0f, 50.0f);
+        std::uniform_real_distribution<float> randRotation(0.0f, 3.0f);
+        std::uniform_real_distribution<float> randColor(0.0f, 1.0f);
+        std::uniform_real_distribution<float> randGravity(-10.0f, -1.0f);
+        std::uniform_real_distribution<float> randVelocityY(10.0f, 200.0f);
+        std::uniform_real_distribution<float> randVelocityXZ(-200.0f, 200.0f);
+        std::uniform_real_distribution<float> randScale(0.5f, 1.0f);
+        std::uniform_int_distribution<int> randTexture(0, textures.size() - 1);
+
+        auto entity = gSceneManager.getCurrentLevel().CreateEntity();
+        if (entity == 1997)
+            gSceneManager.getCurrentLevel().GetComponent<Tag>(entity).name = "Best Entity = " + std::to_string(entity);
+        else
+            gSceneManager.getCurrentLevel().GetComponent<Tag>(entity).name = "Entity " + std::to_string(entity);
+        // std::cout << gSceneManager.getCurrentLevel().GetComponent<Tag>(entity).name << std::endl;
+        gSceneManager.getCurrentLevel().AddComponent<Gravity>(
+            entity, {
+                        .force = glm::vec3(0.0f, randGravity(generator), 0.0f),
+                    });
+
+        gSceneManager.getCurrentLevel().AddComponent<RigidBody>(
+            entity,
+            {
+                .velocity = glm::vec3(randVelocityXZ(generator), randVelocityY(generator), randVelocityXZ(generator)),
+                .acceleration = glm::vec3(0.0f, 0.0f, 0.0f),
+            });
+
+        glm::vec3 position = glm::vec3(randPositionXZ(generator), randPositionY(generator), randPositionXZ(generator));
+        glm::vec3 rotation = glm::vec3(randRotation(generator), randRotation(generator), randRotation(generator));
+        glm::vec3 scale = glm::vec3(randScale(generator));
+
+        gSceneManager.getCurrentLevel().AddComponent<pivot::ecs::component::Transform>(entity, {
+                                                                            .position = position,
+                                                                            .rotation = rotation,
+                                                                            .scale = scale,
+                                                                        });
+
+        gSceneManager.getCurrentLevel().AddComponent<Renderable>(
+            entity, {.meshID = "cube", .textureIndex = 1, .index = gSceneManager.getCurrentLevel().obj.size()});
+
+        gSceneManager.getCurrentLevel().obj.push_back({
+            .meshID = "cube",
+            .objectInformation =
+                {
+                    .transform = Transform(position, rotation, scale),
+                    .textureIndex = textures[randTexture(generator)],
+                    .materialIndex = "white",
+                },
+        });
+    }
+
+    void addObject(std::string object)
+    {
+        glm::vec3 position = glm::vec3(0.0f, 0.0f, 0.0f);
+        glm::vec3 rotation = glm::vec3(0.0f, 0.0f, 0.0f);
+        glm::vec3 scale = glm::vec3(1.0f);
+        auto entity = gSceneManager.getCurrentLevel().CreateEntity();
+        gSceneManager.getCurrentLevel().GetComponent<Tag>(entity).name = "Entity " + std::to_string(entity);
+        gSceneManager.getCurrentLevel().AddComponent<pivot::ecs::component::Transform>(entity, {
+                                                                            .position = position,
+                                                                            .rotation = rotation,
+                                                                            .scale = scale,
+                                                                        });
+        gSceneManager.getCurrentLevel().AddComponent<Renderable>(
+            entity, {.meshID = object, .textureIndex = 1, .index = gSceneManager.getCurrentLevel().obj.size()});
+        gSceneManager.getCurrentLevel().obj.push_back({
+            .meshID = object,
+            .objectInformation =
+                {
+                    .transform = Transform(position, rotation, scale),
+                    .textureIndex = "blanc",
+                    .materialIndex = "white",
+                },
+        });
+    }
 
     void scene1Init()
     {
@@ -42,7 +137,7 @@ public:
         gSceneManager.getCurrentLevel().Init();
         gSceneManager.getCurrentLevel().RegisterComponent<Gravity>();
         gSceneManager.getCurrentLevel().RegisterComponent<RigidBody>();
-        gSceneManager.getCurrentLevel().RegisterComponent<Transform>();
+        gSceneManager.getCurrentLevel().RegisterComponent<pivot::ecs::component::Transform>();
         gSceneManager.getCurrentLevel().RegisterComponent<Renderable>();
         gSceneManager.getCurrentLevel().RegisterComponent<Camera>();
 
@@ -51,7 +146,7 @@ public:
             Signature signature;
             signature.set(gSceneManager.getCurrentLevel().GetComponentType<Gravity>());
             signature.set(gSceneManager.getCurrentLevel().GetComponentType<RigidBody>());
-            signature.set(gSceneManager.getCurrentLevel().GetComponentType<Transform>());
+            signature.set(gSceneManager.getCurrentLevel().GetComponentType<pivot::ecs::component::Transform>());
             gSceneManager.getCurrentLevel().SetSystemSignature<PhysicsSystem>(signature);
         }
 
@@ -59,7 +154,7 @@ public:
         {
             Signature signature;
             signature.set(gSceneManager.getCurrentLevel().GetComponentType<Renderable>());
-            signature.set(gSceneManager.getCurrentLevel().GetComponentType<Transform>());
+            signature.set(gSceneManager.getCurrentLevel().GetComponentType<pivot::ecs::component::Transform>());
             gSceneManager.getCurrentLevel().SetSystemSignature<RenderableSystem>(signature);
         }
 
@@ -72,91 +167,21 @@ public:
 
         system->Init();
 
-        std::array<std::string, 8> textures = {"rouge", "vert", "bleu", "cyan", "orange", "jaune", "blanc", "violet"};
-        std::default_random_engine generator;
-        std::uniform_real_distribution<float> randPositionY(0.0f, 50.0f);
-        std::uniform_real_distribution<float> randPositionXZ(-50.0f, 50.0f);
-        std::uniform_real_distribution<float> randRotation(0.0f, 3.0f);
-        std::uniform_real_distribution<float> randColor(0.0f, 1.0f);
-        std::uniform_real_distribution<float> randGravity(-10.0f, -1.0f);
-        std::uniform_real_distribution<float> randVelocityY(10.0f, 200.0f);
-        std::uniform_real_distribution<float> randVelocityXZ(-200.0f, 200.0f);
-        std::uniform_real_distribution<float> randScale(0.5f, 1.0f);
-        std::uniform_int_distribution<int> randTexture(0, textures.size() - 1);
-
         std::vector<Entity> entities(2021);
 
-        for (auto &_entity: entities) {
-            auto entity = gSceneManager.getCurrentLevel().CreateEntity();
-            if (entity == 1997)
-                gSceneManager.getCurrentLevel().GetComponent<Tag>(entity).name =
-                    "Best Entity = " + std::to_string(entity);
-            else
-                gSceneManager.getCurrentLevel().GetComponent<Tag>(entity).name = "Entity " + std::to_string(entity);
-            std::cout << gSceneManager.getCurrentLevel().GetComponent<Tag>(entity).name << std::endl;
-            gSceneManager.getCurrentLevel().AddComponent<Gravity>(
-                entity, {
-                            .force = glm::vec3(0.0f, randGravity(generator), 0.0f),
-                        });
-
-            gSceneManager.getCurrentLevel().AddComponent<RigidBody>(
-                entity, {
-                            .velocity = glm::vec3(randVelocityXZ(generator), randVelocityY(generator),
-                                                  randVelocityXZ(generator)),
-                            .acceleration = glm::vec3(0.0f, 0.0f, 0.0f),
-                        });
-
-            gSceneManager.getCurrentLevel().AddComponent<Transform>(
-                entity,
-                {
-                    .position =
-                        glm::vec3(randPositionXZ(generator), randPositionY(generator), randPositionXZ(generator)),
-                    .rotation = glm::vec3(randRotation(generator), randRotation(generator), randRotation(generator)),
-                    .scale = glm::vec3(randScale(generator)),
-                });
-
-            gSceneManager.getCurrentLevel().AddComponent<Renderable>(entity, {.meshID = "cube", .textureIndex = 1});
-
-            gSceneManager.getCurrentLevel().obj.push_back({
-                .meshID = "cube",
-                .objectInformation =
-                    {
-                        .transform =
-                            {
-                                .translation = gSceneManager.getCurrentLevel().GetComponent<Transform>(entity).position,
-                                .rotation = gSceneManager.getCurrentLevel().GetComponent<Transform>(entity).rotation,
-                                .scale = gSceneManager.getCurrentLevel().GetComponent<Transform>(entity).scale,
-                            },
-                        .textureIndex = textures[randTexture(generator)],
-                        .materialIndex = "white",
-                    },
-            });
-        }
+        for (auto &_entity: entities) { addRandomObject("cube"); }
 
         Entity camera = gSceneManager.getCurrentLevel().CreateEntity();
         gSceneManager.getCurrentLevel().GetComponent<Tag>(camera).name = "Camera";
         gSceneManager.getCurrentLevel().AddComponent<Camera>(camera, Camera(glm::vec3(0, 200, 500)));
-        gSceneManager.getCurrentLevel().AddComponent<Transform>(camera, {
+        gSceneManager.getCurrentLevel().AddComponent<pivot::ecs::component::Transform>(camera, {
                                                                             .position = glm::vec3(0.0f, 0.0f, 0.0f),
                                                                             .rotation = glm::vec3(0, 0, 0),
                                                                             .scale = glm::vec3(1.0f),
                                                                         });
         gSceneManager.getCurrentLevel().addCamera(camera);
 
-        gSceneManager.getCurrentLevel().obj.push_back({
-            .meshID = "plane",
-            .objectInformation =
-                {
-                    .transform =
-                        {
-                            .translation = glm::vec3(0.0f, 0.0f, 0.0f),
-                            .rotation = glm::vec3(0, 0, 0),
-                            .scale = glm::vec3(1.0f),
-                        },
-                    .textureIndex = "blanc",
-                    .materialIndex = "white",
-                },
-        });
+        addObject("plane");
     }
 
     void scene2Init()
@@ -166,7 +191,7 @@ public:
         gSceneManager.getCurrentLevel().Init();
         gSceneManager.getCurrentLevel().RegisterComponent<Gravity>();
         gSceneManager.getCurrentLevel().RegisterComponent<RigidBody>();
-        gSceneManager.getCurrentLevel().RegisterComponent<Transform>();
+        gSceneManager.getCurrentLevel().RegisterComponent<pivot::ecs::component::Transform>();
         gSceneManager.getCurrentLevel().RegisterComponent<Renderable>();
         gSceneManager.getCurrentLevel().RegisterComponent<Camera>();
 
@@ -174,7 +199,7 @@ public:
         {
             Signature signature;
             signature.set(gSceneManager.getCurrentLevel().GetComponentType<Renderable>());
-            signature.set(gSceneManager.getCurrentLevel().GetComponentType<Transform>());
+            signature.set(gSceneManager.getCurrentLevel().GetComponentType<pivot::ecs::component::Transform>());
             gSceneManager.getCurrentLevel().SetSystemSignature<RenderableSystem>(signature);
         }
 
@@ -187,66 +212,10 @@ public:
 
         system->Init();
 
-        std::array<std::string, 8> textures = {"rouge", "vert", "bleu", "cyan", "orange", "jaune", "blanc", "violet"};
-        std::default_random_engine generator;
-        std::uniform_real_distribution<float> randPositionY(0.0f, 50.0f);
-        std::uniform_real_distribution<float> randPositionXZ(-50.0f, 50.0f);
-        std::uniform_real_distribution<float> randRotation(0.0f, 3.0f);
-        std::uniform_real_distribution<float> randColor(0.0f, 1.0f);
-        std::uniform_real_distribution<float> randGravity(-10.0f, -1.0f);
-        std::uniform_real_distribution<float> randVelocityY(10.0f, 200.0f);
-        std::uniform_real_distribution<float> randVelocityXZ(-200.0f, 200.0f);
-        std::uniform_real_distribution<float> randScale(0.5f, 1.0f);
-        std::uniform_int_distribution<int> randTexture(0, textures.size() - 1);
-
-        std::vector<Entity> entities(5);
-
-        for (auto &_entity: entities) {
-            auto entity = gSceneManager.getCurrentLevel().CreateEntity();
-
-            gSceneManager.getCurrentLevel().AddComponent<Gravity>(
-                entity, {
-                            .force = glm::vec3(0.0f, randGravity(generator), 0.0f),
-                        });
-
-            gSceneManager.getCurrentLevel().AddComponent<RigidBody>(
-                entity, {
-                            .velocity = glm::vec3(randVelocityXZ(generator), randVelocityY(generator),
-                                                  randVelocityXZ(generator)),
-                            .acceleration = glm::vec3(0.0f, 0.0f, 0.0f),
-                        });
-
-            gSceneManager.getCurrentLevel().AddComponent<Transform>(
-                entity,
-                {
-                    .position =
-                        glm::vec3(randPositionXZ(generator), randPositionY(generator), randPositionXZ(generator)),
-                    .rotation = glm::vec3(randRotation(generator), randRotation(generator), randRotation(generator)),
-                    .scale = glm::vec3(randScale(generator)),
-                });
-
-            gSceneManager.getCurrentLevel().AddComponent<Renderable>(entity, {.meshID = "cube", .textureIndex = 1});
-
-            gSceneManager.getCurrentLevel().obj.push_back({
-                .meshID = "cube",
-                .objectInformation =
-                    {
-                        .transform =
-                            {
-                                .translation = gSceneManager.getCurrentLevel().GetComponent<Transform>(entity).position,
-                                .rotation = gSceneManager.getCurrentLevel().GetComponent<Transform>(entity).rotation,
-                                .scale = gSceneManager.getCurrentLevel().GetComponent<Transform>(entity).scale,
-                            },
-                        .textureIndex = textures[randTexture(generator)],
-                        .materialIndex = "white",
-                    },
-            });
-        }
-
         Entity camera = gSceneManager.getCurrentLevel().CreateEntity();
         gSceneManager.getCurrentLevel().GetComponent<Tag>(camera).name = "Camera 1";
         gSceneManager.getCurrentLevel().AddComponent<Camera>(camera, Camera(glm::vec3(0, 200, 500)));
-        gSceneManager.getCurrentLevel().AddComponent<Transform>(camera, {
+        gSceneManager.getCurrentLevel().AddComponent<pivot::ecs::component::Transform>(camera, {
                                                                             .position = glm::vec3(0.0f, 0.0f, 0.0f),
                                                                             .rotation = glm::vec3(0, 0, 0),
                                                                             .scale = glm::vec3(1.0f),
@@ -256,81 +225,64 @@ public:
         Entity camera2 = gSceneManager.getCurrentLevel().CreateEntity();
         gSceneManager.getCurrentLevel().GetComponent<Tag>(camera2).name = "Camera 2";
         gSceneManager.getCurrentLevel().AddComponent<Camera>(camera2, Camera(glm::vec3(0, 200, 500)));
-        gSceneManager.getCurrentLevel().AddComponent<Transform>(camera2, {
+        gSceneManager.getCurrentLevel().AddComponent<pivot::ecs::component::Transform>(camera2, {
                                                                              .position = glm::vec3(0.0f, 0.0f, 0.0f),
                                                                              .rotation = glm::vec3(0, 0, 0),
                                                                              .scale = glm::vec3(1.0f),
                                                                          });
         gSceneManager.getCurrentLevel().addCamera(camera2);
-
-        gSceneManager.getCurrentLevel().obj.push_back({
-            .meshID = "plane",
-            .objectInformation =
-                {
-                    .transform =
-                        {
-                            .translation = glm::vec3(0.0f, 0.0f, 0.0f),
-                            .rotation = glm::vec3(0, 0, 0),
-                            .scale = glm::vec3(1.0f),
-                        },
-                    .textureIndex = "blanc",
-                    .materialIndex = "white",
-                },
-        });
+        addObject("plane");
     }
 
     void init()
     {
+        mCurrentGizmoOperation = ImGuizmo::TRANSLATE;
         gSceneManager.Init();
         scene1Init();
         scene2Init();
         gSceneManager.setCurrentLevelId(_scene2);
         window.captureCursor(true);
-        window.setKeyEventCallback(Window::Key::LEFT_ALT,
-                                   [&](Window &window, const Window::Key key, const Window::KeyAction action) {
-                                       if (action == Window::KeyAction::Release) {
-                                           window.captureCursor(!window.captureCursor());
-                                           bFirstMouse = window.captureCursor();
-                                       }
-                                   });
-        window.setKeyEventCallback(Window::Key::LEFT_CTRL,
-                                   [&](Window &window, const Window::Key key, const Window::KeyAction action) {
-                                       if (action == Window::KeyAction::Release) {
-                                           if (gSceneManager.getCurrentLevelId() == _scene1)
-                                               gSceneManager.setCurrentLevelId(_scene2);
-                                           else
-                                               gSceneManager.setCurrentLevelId(_scene1);
-                                       }
-                                   });
-        window.setKeyEventCallback(Window::Key::V,
-                                   [&](Window &window, const Window::Key key, const Window::KeyAction action) {
-                                       if (action == Window::KeyAction::Release) {
-                                           gSceneManager.getCurrentLevel().switchCamera();
-                                       }
-                                   });
-        auto key_lambda = [&](Window &window, const Window::Key key, const Window::KeyAction action) {
-            switch (action) {
-                case Window::KeyAction::Pressed: {
-                    button.set(static_cast<std::size_t>(key));
-                    Event event(Events::Window::INPUT);
-                    event.SetParam(Events::Window::Input::INPUT, button);
-                    gSceneManager.getCurrentLevel().SendEvent(event);
-                } break;
-                case Window::KeyAction::Release: {
-                    button.reset(static_cast<std::size_t>(key));
-                    Event event(Events::Window::INPUT);
-                    event.SetParam(Events::Window::Input::INPUT, button);
-                    gSceneManager.getCurrentLevel().SendEvent(event);
-                } break;
-                default: break;
-            }
+        window.setKeyReleaseCallback(Window::Key::LEFT_ALT, [&](Window &window, const Window::Key key) {
+            window.captureCursor(!window.captureCursor());
+            bFirstMouse = window.captureCursor();
+        });
+        window.setKeyReleaseCallback(Window::Key::LEFT_CTRL, [&](Window &window, const Window::Key key) {
+            if (gSceneManager.getCurrentLevelId() == _scene1)
+                gSceneManager.setCurrentLevelId(_scene2);
+            else
+                gSceneManager.setCurrentLevelId(_scene1);
+        });
+        window.setKeyReleaseCallback(Window::Key::V, [&](Window &window, const Window::Key key) {
+            gSceneManager.getCurrentLevel().switchCamera();
+        });
+
+        auto key_lambda_press = [&](Window &window, const Window::Key key) {
+            button.set(static_cast<std::size_t>(key));
+            Event event(Events::Window::INPUT);
+            event.SetParam(Events::Window::Input::INPUT, button);
+            gSceneManager.getCurrentLevel().SendEvent(event);
         };
-        window.setKeyEventCallback(Window::Key::W, key_lambda);
-        window.setKeyEventCallback(Window::Key::S, key_lambda);
-        window.setKeyEventCallback(Window::Key::D, key_lambda);
-        window.setKeyEventCallback(Window::Key::A, key_lambda);
-        window.setKeyEventCallback(Window::Key::SPACE, key_lambda);
-        window.setKeyEventCallback(Window::Key::LEFT_SHIFT, key_lambda);
+        auto key_lambda_release = [&](Window &window, const Window::Key key) {
+            button.reset(static_cast<std::size_t>(key));
+            Event event(Events::Window::INPUT);
+            event.SetParam(Events::Window::Input::INPUT, button);
+            gSceneManager.getCurrentLevel().SendEvent(event);
+        };
+        // Press action
+        window.setKeyPressCallback(Window::Key::W, key_lambda_press);
+        window.setKeyPressCallback(Window::Key::S, key_lambda_press);
+        window.setKeyPressCallback(Window::Key::D, key_lambda_press);
+        window.setKeyPressCallback(Window::Key::A, key_lambda_press);
+        window.setKeyPressCallback(Window::Key::SPACE, key_lambda_press);
+        window.setKeyPressCallback(Window::Key::LEFT_SHIFT, key_lambda_press);
+        // Release action
+        window.setKeyReleaseCallback(Window::Key::W, key_lambda_release);
+        window.setKeyReleaseCallback(Window::Key::S, key_lambda_release);
+        window.setKeyReleaseCallback(Window::Key::D, key_lambda_release);
+        window.setKeyReleaseCallback(Window::Key::A, key_lambda_release);
+        window.setKeyReleaseCallback(Window::Key::SPACE, key_lambda_release);
+        window.setKeyReleaseCallback(Window::Key::LEFT_SHIFT, key_lambda_release);
+
         window.setMouseMovementCallback([&](Window &window, const glm::dvec2 pos) {
             if (!window.captureCursor()) return;
 
@@ -350,35 +302,137 @@ public:
                       "../assets/orange.png", "../assets/jaune.png", "../assets/blanc.png", "../assets/violet.png"});
     }
 
+    void editTransform(const float *cameraView, const float *cameraProjection, bool useWindow,
+                       Transform &transform)
+    {
+        float *matrix = glm::value_ptr(transform.getModelMatrix());
+        static ImGuizmo::MODE mCurrentGizmoMode(ImGuizmo::LOCAL);
+        static bool useSnap = false;
+        static float snap[3] = {1.f, 1.f, 1.f};
+        static float bounds[] = {-0.5f, -0.5f, -0.5f, 0.5f, 0.5f, 0.5f};
+        static float boundsSnap[] = {0.1f, 0.1f, 0.1f};
+        static bool boundSizing = false;
+        static bool boundSizingSnap = false;
+
+        if (ImGui::RadioButton("Translate", mCurrentGizmoOperation == ImGuizmo::TRANSLATE))
+            mCurrentGizmoOperation = ImGuizmo::TRANSLATE;
+        ImGui::SameLine();
+        if (ImGui::RadioButton("Rotate", mCurrentGizmoOperation == ImGuizmo::ROTATE))
+            mCurrentGizmoOperation = ImGuizmo::ROTATE;
+        ImGui::SameLine();
+        if (ImGui::RadioButton("Scale", mCurrentGizmoOperation == ImGuizmo::SCALE))
+            mCurrentGizmoOperation = ImGuizmo::SCALE;
+
+        float matrixTranslation[3], matrixRotation[3], matrixScale[3];
+        ImGuizmo::DecomposeMatrixToComponents(matrix, matrixTranslation, matrixRotation, matrixScale);
+        ImGui::InputFloat3("Tr", matrixTranslation);
+        ImGui::InputFloat3("Rt", matrixRotation);
+        ImGui::InputFloat3("Sc", matrixScale);
+        ImGuizmo::RecomposeMatrixFromComponents(matrixTranslation, matrixRotation, matrixScale, matrix);
+        ImGuiIO &io = ImGui::GetIO();
+        ImGuizmo::SetRect(0, 0, io.DisplaySize.x, io.DisplaySize.y);
+        // ImGuizmo::DrawGrid(cameraView, cameraProjection, identityMatrix, gridSize);
+        ImGuizmo::Manipulate(cameraView, cameraProjection, mCurrentGizmoOperation, mCurrentGizmoMode, matrix, NULL, NULL, NULL, NULL);
+    }
+
     void run()
     {
         float dt = 0.0f;
+        float fov = 27.f;
+        bool useWindow = true;
+        bool toggle = false;
+        std::size_t currentIndex = gSceneManager.getCurrentLevel().obj.size() - 1;
+        gridSize = 100.f;
         this->VulkanApplication::init();
+
         while (!window.shouldClose()) {
             window.pollEvent();
 
             ImGui_ImplVulkan_NewFrame();
             ImGui_ImplGlfw_NewFrame();
             ImGui::NewFrame();
+
+            // Guizmo
+            ImGuiIO &io = ImGui::GetIO();
+            ImGuizmo::BeginFrame();
+
+            ImGui::SetNextWindowPos(ImVec2(10, 10));
+            ImGui::SetNextWindowSize(ImVec2(320, 200));
+            ImGui::Begin("Editor");
+            if (ImGui::RadioButton("Full view", !useWindow)) useWindow = false;
+            ImGui::SameLine();
+            if (ImGui::RadioButton("Window", useWindow)) useWindow = true;
+            ImGui::SliderInt("Grid size", &gridSize, 100, 1000);
+
+            ImGui::Text("X: %f Y: %f", io.MousePos.x, io.MousePos.y);
+            if (ImGuizmo::IsUsing()) {
+                ImGui::Text("Using gizmo");
+            } else {
+                ImGui::Text(ImGuizmo::IsOver() ? "Over gizmo" : "");
+                ImGui::SameLine();
+                ImGui::Text(ImGuizmo::IsOver(ImGuizmo::TRANSLATE) ? "Over translate gizmo" : "");
+                ImGui::SameLine();
+                ImGui::Text(ImGuizmo::IsOver(ImGuizmo::ROTATE) ? "Over rotate gizmo" : "");
+                ImGui::SameLine();
+                ImGui::Text(ImGuizmo::IsOver(ImGuizmo::SCALE) ? "Over scale gizmo" : "");
+            }
+            ImGui::Separator();
+            ImGui::Text("3d model");
+            if (ImGui::BeginTabBar("Models")) {
+                if (ImGui::TabItemButton("plane")) { addObject("plane"); }
+                if (ImGui::TabItemButton("cube")) { addRandomObject("cube"); }
+            }
+            ImGui::EndTabBar();
+            ImGui::Separator();
+
+            ImGui::Text("Scene");
+            if (ImGui::BeginTabBar("Scene")) {
+                if (ImGui::BeginTabItem("Scene 1")) {
+                    gSceneManager.setCurrentLevelId(_scene1);
+                    if (currentIndex >= gSceneManager.getCurrentLevel().obj.size())
+                        currentIndex = gSceneManager.getCurrentLevel().obj.size() - 1;
+                    ImGui::EndTabItem();
+                }
+                if (ImGui::BeginTabItem("Scene 2")) {
+                    gSceneManager.setCurrentLevelId(_scene2);
+                    if (currentIndex >= gSceneManager.getCurrentLevel().obj.size())
+                        currentIndex = gSceneManager.getCurrentLevel().obj.size() - 1;
+                    ImGui::EndTabItem();
+                }
+            }
+            ImGui::EndTabBar();
+            ImGui::Separator();
+            const float *view = glm::value_ptr(gSceneManager.getCurrentLevel().getCamera().getView());
+            const float *projection = glm::value_ptr(gSceneManager.getCurrentLevel().getCamera().getProjection(80.0f, getAspectRatio(), 0.1f));
+            editTransform(view, projection, useWindow,
+                          gSceneManager.getCurrentLevel().obj[currentIndex].objectInformation.transform);
+            ImGui::End();
+            // Guizmo
+
+            ImGui::SetNextWindowPos(ImVec2(10, 220));
+            ImGui::SetNextWindowSize(ImVec2(320, 150));
             ImGui::Begin("Entity");
             for (uint32_t i = 0; i < gSceneManager.getCurrentLevel().getLivingEntityCount(); i++) {
+                // Component manager: getComponents(Entity entity);
+                // printImGui(gSceneManager.getCurrentLevel().GetComponent<Tag>(i));
                 if (ImGui::TreeNode(gSceneManager.getCurrentLevel().GetComponent<Tag>(i).name.c_str())) {
-                    
                     ImGui::TreePop();
+                    currentIndex = gSceneManager.getCurrentLevel().GetComponent<Renderable>(i).index;
                     ImGui::Separator();
                 }
             }
             ImGui::End();
-            ImVec4 clear_color = ImVec4(0.45f, 0.55f, 0.60f, 1.00f);
-            static bool toggle = false;
-            ImGui::Begin("Hello, world!");
+
+            ImGui::SetNextWindowPos(ImVec2(10, 340));
+            ImGui::SetNextWindowSize(ImVec2(320, 150));
+
+            ImGui::Begin("Stats");
             ImGui::Checkbox("Systems", &toggle);
-            ImGui::Text("Application average %.3f ms/frame (%.1f FPS)", 1000.0f / ImGui::GetIO().Framerate,
-                        ImGui::GetIO().Framerate);
+            ImGui::Text("Fps: %.1f", ImGui::GetIO().Framerate);
+            ImGui::Text("ms/frame %.3f", 1000.0f / ImGui::GetIO().Framerate);
             ImGui::End();
-            if (toggle) {
-                gSceneManager.getCurrentLevel().Update(dt);
-            }
+
+            if (toggle) { gSceneManager.getCurrentLevel().Update(dt); }
             auto startTime = std::chrono::high_resolution_clock::now();
 
             ImGui::Render();
@@ -390,12 +444,15 @@ public:
     }
 
 public:
+    ImGuizmo::OPERATION mCurrentGizmoOperation;
+    const float identityMatrix[16] = {1.f, 0.f, 0.f, 0.f, 0.f, 1.f, 0.f, 0.f, 0.f, 0.f, 1.f, 0.f, 0.f, 0.f, 0.f, 1.f};
     LevelId _scene1;
     LevelId _scene2;
     glm::dvec2 last;
 
     bool bFirstMouse = true;
     std::bitset<UINT16_MAX> button;
+    int gridSize;
 };
 
 int main()
