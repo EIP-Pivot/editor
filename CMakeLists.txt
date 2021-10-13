@@ -23,14 +23,14 @@ if (LOCAL_PIVOT_DIRECTORY STREQUAL "")
     FetchContent_Declare(
         pivot
         GIT_REPOSITORY https://github.com/EIP-Pivot/pivot.git
-        GIT_TAG 5d7ed5155ad07fbd0457dce0a8eb4fd25cc374a4
+        GIT_TAG 8d24ec099147c08d8bf82ba5342349cecb6e7267
     )
     if (NOT pivot_POPULATED)
         message(STATUS "Populating pivot")
         FetchContent_Populate(pivot)
         add_subdirectory(${pivot_SOURCE_DIR} ${pivot_BINARY_DIR})
         target_compile_definitions(pivot-graphics PUBLIC
-            MAX_PROJECTION_LIMIT=1000.0f
+            MAX_PROJECTION_LIMIT=10000.0f
         )
     endif()
 else()
