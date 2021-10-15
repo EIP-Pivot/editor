@@ -1,12 +1,11 @@
 #include "Systems/PhysicsSystem.hxx"
 #include "pivot/ecs/Components/Gravity.hxx"
 #include "pivot/ecs/Components/RigidBody.hxx"
-#include <pivot/ecs/Core/SceneManager.hxx>
 #include <pivot/graphics/types/RenderObject.hxx>
 
-extern SceneManager gSceneManager;
+#include <pivot/ecs/Core/SceneManager.hxx>
 
-void PhysicsSystem::Init() {}
+extern SceneManager gSceneManager;
 
 void PhysicsSystem::Update(float dt)
 {
@@ -21,4 +20,19 @@ void PhysicsSystem::Update(float dt)
 
         rigidBody.velocity += gravity.force * dt;
     }
+}
+
+Signature PhysicsSystem::getSignature()
+{
+    if (!gSceneManager.getCurrentLevel().isRegister<RenderObject>())
+        gSceneManager.getCurrentLevel().RegisterComponent<RenderObject>();
+    if (!gSceneManager.getCurrentLevel().isRegister<Gravity>())
+        gSceneManager.getCurrentLevel().RegisterComponent<Gravity>();
+    if (!gSceneManager.getCurrentLevel().isRegister<RigidBody>())
+        gSceneManager.getCurrentLevel().RegisterComponent<RigidBody>();
+    Signature signature;
+    signature.set(gSceneManager.getCurrentLevel().GetComponentType<Gravity>());
+    signature.set(gSceneManager.getCurrentLevel().GetComponentType<RigidBody>());
+    signature.set(gSceneManager.getCurrentLevel().GetComponentType<RenderObject>());
+    return signature;
 }

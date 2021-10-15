@@ -10,6 +10,7 @@
 #include <pivot/ecs/Components/Gravity.hxx>
 #include <pivot/ecs/Components/RigidBody.hxx>
 #include <pivot/ecs/Components/Tag.hxx>
+
 #include <pivot/ecs/Core/Event.hxx>
 #include <pivot/ecs/Systems/ControlSystem.hxx>
 #include <pivot/ecs/ecs.hxx>
@@ -21,31 +22,24 @@
 #include <pivot/ecs/Core/Scene.hxx>
 #include <pivot/ecs/Core/SceneManager.hxx>
 
-#include "imgui.h"
-#include <backends/imgui_impl_glfw.h>
-#include <backends/imgui_impl_vulkan.h>
-
-#include <ImGuizmo.h>
-
 #include <glm/gtc/quaternion.hpp>
 #include <glm/gtc/type_ptr.hpp>
 #include <glm/gtx/quaternion.hpp>
 
+#include "ImGuiCore/ComponentEditor.hxx"
+#include "ImGuiCore/Editor.hxx"
+#include "ImGuiCore/EntityModule.hxx"
+#include "ImGuiCore/ImGuiManager.hxx"
+#include "ImGuiCore/SystemsEditor.hxx"
+
+#include "FrameLimiter.hpp"
+
 Logger *logger = nullptr;
-
-template <typename T>
-void printImGui(const T &);
-
-template <>
-void printImGui(const Tag &tag)
-{
-    std::cout << tag.name << std::endl;
-}
 
 class Application : public VulkanApplication
 {
 public:
-    Application(): VulkanApplication(){};
+    Application(): VulkanApplication(), editor(Editor()), camera(editor.getCamera()){};
 
     void addRandomObject(std::string object)
     {
@@ -60,32 +54,24 @@ public:
         std::uniform_real_distribution<float> randVelocityXZ(-200.0f, 200.0f);
         std::uniform_real_distribution<float> randScale(0.5f, 1.0f);
         std::uniform_int_distribution<int> randTexture(0, textures.size() - 1);
-
-        auto entity = gSceneManager.getCurrentLevel().CreateEntity();
-
-        if (entity == 1997)
-            gSceneManager.getCurrentLevel().GetComponent<Tag>(entity).name = "Best Entity = " + std::to_string(entity);
+        auto newEntity = entity.addEntity();
+        if (newEntity == 1997)
+            gSceneManager.getCurrentLevel().GetComponent<Tag>(newEntity).name = "Best Entity = " + std::to_string(newEntity);
         else
-            gSceneManager.getCurrentLevel().GetComponent<Tag>(entity).name = "Entity " + std::to_string(entity);
-
-        gSceneManager.getCurrentLevel().AddComponent<Gravity>(
-            entity, {
+            gSceneManager.getCurrentLevel().GetComponent<Tag>(newEntity).name = "Entity " + std::to_string(newEntity);
+        componentEditor.addComponent<Gravity>(newEntity, {
                         .force = glm::vec3(0.0f, randGravity(generator), 0.0f),
                     });
-
-        gSceneManager.getCurrentLevel().AddComponent<RigidBody>(
-            entity,
+        componentEditor.addComponent<RigidBody>(
+            newEntity,
             {
                 .velocity = glm::vec3(randVelocityXZ(generator), randVelocityY(generator), randVelocityXZ(generator)),
                 .acceleration = glm::vec3(0.0f, 0.0f, 0.0f),
             });
-
         glm::vec3 position = glm::vec3(randPositionXZ(generator), randPositionY(generator), randPositionXZ(generator));
         glm::vec3 rotation = glm::vec3(randRotation(generator), randRotation(generator), randRotation(generator));
         glm::vec3 scale = glm::vec3(randScale(generator));
-
-        gSceneManager.getCurrentLevel().AddComponent<RenderObject>(
-            entity, {
+        componentEditor.addComponent<RenderObject>(newEntity, {
                         .meshID = object,
                         .objectInformation =
                             {
@@ -94,123 +80,34 @@ public:
                                 .materialIndex = "white",
                             },
                     });
-        if (gSceneManager.getCurrentLevelId() == _scene1)
-            objS1.push_back(gSceneManager.getCurrentLevel().GetComponent<RenderObject>(entity));
-        else
-            objS2.push_back(gSceneManager.getCurrentLevel().GetComponent<RenderObject>(entity));
     }
 
-    void addObject(std::string object)
+    void DemoScene()
     {
-        glm::vec3 position = glm::vec3(0.0f, 0.0f, 0.0f);
-        glm::vec3 rotation = glm::vec3(0.0f, 0.0f, 0.0f);
-        glm::vec3 scale = glm::vec3(1.0f);
-        auto entity = gSceneManager.getCurrentLevel().CreateEntity();
-        gSceneManager.getCurrentLevel().GetComponent<Tag>(entity).name = "Entity " + std::to_string(entity);
-        gSceneManager.getCurrentLevel().AddComponent<RenderObject>(
-            entity, {
-                        .meshID = object,
-                        .objectInformation =
-                            {
-                                .transform = Transform(position, rotation, scale),
-                                .textureIndex = "blanc",
-                                .materialIndex = "white",
-                            },
-                    });
-        if (gSceneManager.getCurrentLevelId() == _scene1)
-            objS1.push_back(gSceneManager.getCurrentLevel().GetComponent<RenderObject>(entity));
-        else
-            objS2.push_back(gSceneManager.getCurrentLevel().GetComponent<RenderObject>(entity));
-    }
-
-    void scene1Init()
-    {
-        _scene1 = gSceneManager.registerLevel();
-        gSceneManager.setCurrentLevelId(_scene1);
-        gSceneManager.getCurrentLevel().Init();
-        gSceneManager.getCurrentLevel().RegisterComponent<Gravity>();
-        gSceneManager.getCurrentLevel().RegisterComponent<RigidBody>();
-        gSceneManager.getCurrentLevel().RegisterComponent<Camera>();
-        gSceneManager.getCurrentLevel().RegisterComponent<RenderObject>();
-
-        gSceneManager.getCurrentLevel().RegisterSystem<PhysicsSystem>();
-        {
-            Signature signature;
-            signature.set(gSceneManager.getCurrentLevel().GetComponentType<Gravity>());
-            signature.set(gSceneManager.getCurrentLevel().GetComponentType<RigidBody>());
-            signature.set(gSceneManager.getCurrentLevel().GetComponentType<RenderObject>());
-            gSceneManager.getCurrentLevel().SetSystemSignature<PhysicsSystem>(signature);
-        }
-
-        auto system = gSceneManager.getCurrentLevel().RegisterSystem<ControlSystem>();
-        {
-            Signature signature;
-            signature.set(gSceneManager.getCurrentLevel().GetComponentType<Camera>());
-            gSceneManager.getCurrentLevel().SetSystemSignature<ControlSystem>(signature);
-        }
-
-        system->Init();
+        editor.addScene("Demo");
+        systemsEditor.addSystem<PhysicsSystem>();
 
         std::vector<Entity> entities(2021);
 
         for (auto &_entity: entities) { addRandomObject("cube"); }
-
-        Entity camera = gSceneManager.getCurrentLevel().CreateEntity();
-        gSceneManager.getCurrentLevel().GetComponent<Tag>(camera).name = "Camera";
-        gSceneManager.getCurrentLevel().AddComponent<Camera>(camera, Camera(glm::vec3(0, 200, 500)));
-        gSceneManager.getCurrentLevel().addCamera(camera);
-
-        addObject("plane");
     }
 
-    void scene2Init()
+    void loadScene()
     {
-        _scene2 = gSceneManager.registerLevel();
-        gSceneManager.setCurrentLevelId(_scene2);
-        gSceneManager.getCurrentLevel().Init();
-        gSceneManager.getCurrentLevel().RegisterComponent<Gravity>();
-        gSceneManager.getCurrentLevel().RegisterComponent<RigidBody>();
-        gSceneManager.getCurrentLevel().RegisterComponent<Camera>();
-        gSceneManager.getCurrentLevel().RegisterComponent<RenderObject>();
-
-        auto system = gSceneManager.getCurrentLevel().RegisterSystem<ControlSystem>();
-        {
-            Signature signature;
-            signature.set(gSceneManager.getCurrentLevel().GetComponentType<Camera>());
-            gSceneManager.getCurrentLevel().SetSystemSignature<ControlSystem>(signature);
-        }
-
-        system->Init();
-
-        Entity camera = gSceneManager.getCurrentLevel().CreateEntity();
-        gSceneManager.getCurrentLevel().GetComponent<Tag>(camera).name = "Camera 1";
-        gSceneManager.getCurrentLevel().AddComponent<Camera>(camera, Camera(glm::vec3(0, 200, 500)));
-        gSceneManager.getCurrentLevel().addCamera(camera);
-
-        Entity camera2 = gSceneManager.getCurrentLevel().CreateEntity();
-        gSceneManager.getCurrentLevel().GetComponent<Tag>(camera2).name = "Camera 2";
-        gSceneManager.getCurrentLevel().AddComponent<Camera>(camera2, Camera(glm::vec3(0, 200, 500)));
-        gSceneManager.getCurrentLevel().addCamera(camera2);
-        addObject("plane");
+        LevelId defaultScene = editor.addScene("Default");
+        DemoScene();
+        gSceneManager.setCurrentLevelId(defaultScene);
     }
 
     void init()
     {
-        mCurrentGizmoOperation = ImGuizmo::TRANSLATE;
         gSceneManager.Init();
-        scene1Init();
-        scene2Init();
-        gSceneManager.setCurrentLevelId(_scene1);
+        loadScene();
+
         window.captureCursor(true);
         window.setKeyReleaseCallback(Window::Key::LEFT_ALT, [&](Window &window, const Window::Key key) {
             window.captureCursor(!window.captureCursor());
             bFirstMouse = window.captureCursor();
-        });
-        window.setKeyReleaseCallback(Window::Key::LEFT_CTRL, [&](Window &window, const Window::Key key) {
-            if (gSceneManager.getCurrentLevelId() == _scene1)
-                gSceneManager.setCurrentLevelId(_scene2);
-            else
-                gSceneManager.setCurrentLevelId(_scene1);
         });
         window.setKeyReleaseCallback(Window::Key::V, [&](Window &window, const Window::Key key) {
             gSceneManager.getCurrentLevel().switchCamera();
@@ -254,45 +151,11 @@ public:
             auto yoffset = last.y - pos.y;
 
             last = pos;
-            ControlSystem::processMouseMovement(gSceneManager.getCurrentLevel().getCamera(),
-                                                glm::dvec2(xoffset, yoffset));
+            ControlSystem::processMouseMovement(camera, glm::dvec2(xoffset, yoffset));
         });
         load3DModels({"../assets/plane.obj", "../assets/cube.obj"});
         loadTextures({"../assets/rouge.png", "../assets/vert.png", "../assets/bleu.png", "../assets/cyan.png",
                       "../assets/orange.png", "../assets/jaune.png", "../assets/blanc.png", "../assets/violet.png"});
-    }
-
-    void editTransform(const float *cameraView, const float *cameraProjection, bool useWindow, Transform &transform)
-    {
-        float *matrix = glm::value_ptr(transform.getModelMatrix());
-        static ImGuizmo::MODE mCurrentGizmoMode(ImGuizmo::LOCAL);
-        static bool useSnap = false;
-        static float snap[3] = {1.f, 1.f, 1.f};
-        static float bounds[] = {-0.5f, -0.5f, -0.5f, 0.5f, 0.5f, 0.5f};
-        static float boundsSnap[] = {0.1f, 0.1f, 0.1f};
-        static bool boundSizing = false;
-        static bool boundSizingSnap = false;
-
-        if (ImGui::RadioButton("Translate", mCurrentGizmoOperation == ImGuizmo::TRANSLATE))
-            mCurrentGizmoOperation = ImGuizmo::TRANSLATE;
-        ImGui::SameLine();
-        if (ImGui::RadioButton("Rotate", mCurrentGizmoOperation == ImGuizmo::ROTATE))
-            mCurrentGizmoOperation = ImGuizmo::ROTATE;
-        ImGui::SameLine();
-        if (ImGui::RadioButton("Scale", mCurrentGizmoOperation == ImGuizmo::SCALE))
-            mCurrentGizmoOperation = ImGuizmo::SCALE;
-
-        float matrixTranslation[3], matrixRotation[3], matrixScale[3];
-        ImGuizmo::DecomposeMatrixToComponents(matrix, matrixTranslation, matrixRotation, matrixScale);
-        ImGui::InputFloat3("Tr", matrixTranslation);
-        ImGui::InputFloat3("Rt", matrixRotation);
-        ImGui::InputFloat3("Sc", matrixScale);
-        ImGuizmo::RecomposeMatrixFromComponents(matrixTranslation, matrixRotation, matrixScale, matrix);
-        ImGuiIO &io = ImGui::GetIO();
-        ImGuizmo::SetRect(0, 0, io.DisplaySize.x, io.DisplaySize.y);
-        // ImGuizmo::DrawGrid(cameraView, cameraProjection, identityMatrix, gridSize);
-        ImGuizmo::Manipulate(cameraView, cameraProjection, mCurrentGizmoOperation, mCurrentGizmoMode, matrix, NULL,
-                             NULL, NULL, NULL);
     }
 
     void run()
@@ -300,119 +163,49 @@ public:
         float dt = 0.0f;
         float fov = 27.f;
         bool useWindow = true;
-        bool toggle = false;
         Entity currentEdit = 0;
         gridSize = 100.f;
         this->VulkanApplication::init();
-
+        FrameLimiter<60> fpsLimiter;
         while (!window.shouldClose()) {
+            auto startTime = std::chrono::high_resolution_clock::now();
             window.pollEvent();
 
-            ImGui_ImplVulkan_NewFrame();
-            ImGui_ImplGlfw_NewFrame();
-            ImGui::NewFrame();
+            imGuiManager.newFrame();
 
-            // Guizmo
-            ImGuiIO &io = ImGui::GetIO();
-            ImGuizmo::BeginFrame();
+            editor.create();
+            if (!editor.getRun())
+            {
+                editor.setAspectRatio(getAspectRatio());
+                entity.create();
+                entity.hasSelected() ? componentEditor.create(entity.getEntitySelected()) : componentEditor.create();
+                systemsEditor.create();
 
-            ImGui::SetNextWindowPos(ImVec2(10, 10));
-            ImGui::SetNextWindowSize(ImVec2(320, 200));
-            ImGui::Begin("Editor");
-            if (ImGui::RadioButton("Full view", !useWindow)) useWindow = false;
-            ImGui::SameLine();
-            if (ImGui::RadioButton("Window", useWindow)) useWindow = true;
-            ImGui::SliderInt("Grid size", &gridSize, 100, 1000);
-
-            ImGui::Text("X: %f Y: %f", io.MousePos.x, io.MousePos.y);
-            if (ImGuizmo::IsUsing()) {
-                ImGui::Text("Using gizmo");
-            } else {
-                ImGui::Text(ImGuizmo::IsOver() ? "Over gizmo" : "");
-                ImGui::SameLine();
-                ImGui::Text(ImGuizmo::IsOver(ImGuizmo::TRANSLATE) ? "Over translate gizmo" : "");
-                ImGui::SameLine();
-                ImGui::Text(ImGuizmo::IsOver(ImGuizmo::ROTATE) ? "Over rotate gizmo" : "");
-                ImGui::SameLine();
-                ImGui::Text(ImGuizmo::IsOver(ImGuizmo::SCALE) ? "Over scale gizmo" : "");
-            }
-            ImGui::Separator();
-            ImGui::Text("3d model");
-            if (ImGui::BeginTabBar("Models")) {
-                if (ImGui::TabItemButton("plane")) { addObject("plane"); }
-                if (ImGui::TabItemButton("cube")) { addRandomObject("cube"); }
-            }
-            ImGui::EndTabBar();
-            ImGui::Separator();
-
-            ImGui::Text("Scene");
-            if (ImGui::BeginTabBar("Scene")) {
-                if (ImGui::BeginTabItem("Scene 1")) {
-                    gSceneManager.setCurrentLevelId(_scene1);
-                    ImGui::EndTabItem();
-                }
-                if (ImGui::BeginTabItem("Scene 2")) {
-                    gSceneManager.setCurrentLevelId(_scene2);
-                    ImGui::EndTabItem();
+                if (entity.hasSelected() &&
+                    gSceneManager.getCurrentLevel().hasComponent<RenderObject>(entity.getEntitySelected())) {
+                    editor.DisplayGuizmo(entity.getEntitySelected());
                 }
             }
-            ImGui::EndTabBar();
-            ImGui::Separator();
-            const float *view = glm::value_ptr(gSceneManager.getCurrentLevel().getCamera().getView());
-            const float *projection = glm::value_ptr(
-                gSceneManager.getCurrentLevel().getCamera().getProjection(80.0f, getAspectRatio(), 0.1f));
-            if (gSceneManager.getCurrentLevel().getLivingEntityCount() > 0 &&
-                gSceneManager.getCurrentLevel()
-                    .getSignature(currentEdit)
-                    .test(gSceneManager.getCurrentLevel().GetComponentType<RenderObject>()))
-                editTransform(view, projection, useWindow,
-                              gSceneManager.getCurrentLevel()
-                                  .GetComponent<RenderObject>(currentEdit)
-                                  .objectInformation.transform);
-            ImGui::End();
-            // Guizmo
-
-            ImGui::SetNextWindowPos(ImVec2(10, 220));
-            ImGui::SetNextWindowSize(ImVec2(320, 150));
-            ImGui::Begin("Entity");
-            for (Entity entity = 0; entity < gSceneManager.getCurrentLevel().getLivingEntityCount(); entity++) {
-                // Component manager: getComponents(Entity entity);
-                // printImGui(gSceneManager.getCurrentLevel().GetComponent<Tag>(i));
-                if (ImGui::TreeNode(gSceneManager.getCurrentLevel().GetComponent<Tag>(entity).name.c_str())) {
-                    ImGui::TreePop();
-                    currentEdit = entity;
-                    ImGui::Separator();
-                }
+            else {
+                gSceneManager.getCurrentLevel().Update(dt);
             }
-            ImGui::End();
 
-            ImGui::SetNextWindowPos(ImVec2(10, 340));
-            ImGui::SetNextWindowSize(ImVec2(320, 150));
+            imGuiManager.render();
 
-            ImGui::Begin("Stats");
-            ImGui::Checkbox("Systems", &toggle);
-            ImGui::Text("Fps: %.1f", ImGui::GetIO().Framerate);
-            ImGui::Text("ms/frame %.3f", 1000.0f / ImGui::GetIO().Framerate);
-            ImGui::End();
-
-            if (toggle) { gSceneManager.getCurrentLevel().Update(dt); }
-            auto startTime = std::chrono::high_resolution_clock::now();
-
-            ImGui::Render();
-            draw(gSceneManager.getCurrentLevelId() == _scene1 ? objS1 : objS2,
-                 gSceneManager.getCurrentLevel().getCamera().getGPUCameraData(80.f, getAspectRatio()));
+            draw(componentEditor.getObject(), camera.getGPUCameraData(80.f, getAspectRatio()));
+            fpsLimiter.sleep();
             auto stopTime = std::chrono::high_resolution_clock::now();
             dt = std::chrono::duration<float>(stopTime - startTime).count();
         }
     }
 
 public:
-    std::vector<std::reference_wrapper<const RenderObject>> objS1;
-    std::vector<std::reference_wrapper<const RenderObject>> objS2;
-    ImGuizmo::OPERATION mCurrentGizmoOperation;
-    const float identityMatrix[16] = {1.f, 0.f, 0.f, 0.f, 0.f, 1.f, 0.f, 0.f, 0.f, 0.f, 1.f, 0.f, 0.f, 0.f, 0.f, 1.f};
-    LevelId _scene1;
-    LevelId _scene2;
+    ImGuiManager imGuiManager;
+    Editor editor;
+    EntityModule entity;
+    ComponentEditor componentEditor;
+    SystemsEditor systemsEditor;
+    Camera &camera;
     glm::dvec2 last;
 
     bool bFirstMouse = true;

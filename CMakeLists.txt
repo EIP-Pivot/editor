@@ -23,7 +23,7 @@ if (LOCAL_PIVOT_DIRECTORY STREQUAL "")
     FetchContent_Declare(
         pivot
         GIT_REPOSITORY https://github.com/EIP-Pivot/pivot.git
-        GIT_TAG 160c7e8b23e2a66ef5a200918c9d9d7ee46becdf
+        GIT_TAG ad95de3fad5eb4a25f8b1fcfe7c7c4eee30d97fc
     )
     if (NOT pivot_POPULATED)
         message(STATUS "Populating pivot")
@@ -40,7 +40,14 @@ else()
     )
 endif()
 
-add_executable(${PROJECT_NAME} source/main.cxx source/Systems/PhysicsSystem.cxx)
+add_executable(${PROJECT_NAME} source/main.cxx
+                               source/Systems/PhysicsSystem.cxx
+                               source/ImGuiCore/ImGuiManager.cxx
+                               source/ImGuiCore/Editor.cxx
+                               source/ImGuiCore/EntityModule.cxx
+                               source/ImGuiCore/ComponentEditor.cxx
+                               source/ImGuiCore/SystemsEditor.cxx
+)
 
 target_include_directories(${PROJECT_NAME} PRIVATE include/)
 
