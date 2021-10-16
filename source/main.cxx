@@ -87,7 +87,7 @@ public:
         editor.addScene("Demo");
         systemsEditor.addSystem<PhysicsSystem>();
 
-        std::vector<Entity> entities(2021);
+        std::vector<Entity> entities(MAX_OBJECT - 1);
 
         for (auto &_entity: entities) { addRandomObject("cube"); }
     }
