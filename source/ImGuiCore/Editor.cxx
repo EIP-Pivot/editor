@@ -30,9 +30,6 @@ void Editor::create()
         if (ImGui::RadioButton("Scale", currentGizmoOperation == ImGuizmo::SCALE))
             currentGizmoOperation = ImGuizmo::SCALE;
         ImGui::Separator();
-        ImGui::Text("X: %f Y: %f", io.MousePos.x, io.MousePos.y);
-        ImGui::Text("Fps: %.1f", ImGui::GetIO().Framerate);
-        ImGui::Text("ms/frame %.3f", 1000.0f / ImGui::GetIO().Framerate);
         if (ImGuizmo::IsUsing()) {
             ImGui::Text("Using gizmo");
         } else {
@@ -61,6 +58,9 @@ void Editor::create()
         }
         ImGui::Separator();
     }
+    ImGui::Text("X: %f Y: %f", io.MousePos.x, io.MousePos.y);
+    ImGui::Text("Fps: %.1f", ImGui::GetIO().Framerate);
+    ImGui::Text("ms/frame %.3f", 1000.0f / ImGui::GetIO().Framerate);
     ImGui::Checkbox("Systems", &run);
     ImGui::End();
 }
