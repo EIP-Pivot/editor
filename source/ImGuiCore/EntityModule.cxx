@@ -12,7 +12,7 @@ void EntityModule::create()
     currentScene = gSceneManager.getCurrentLevelId();
     ImGui::Begin("Entity");
     createPopUp();
-    for (Entity entity = 0; entity < gSceneManager.getCurrentLevel().getLivingEntityCount(); entity++) {
+    for (auto const &[entity,_]: gSceneManager.getCurrentLevel().getEntities()) {
         if (ImGui::Selectable(gSceneManager.getCurrentLevel().GetComponent<Tag>(entity).name.c_str(),
                               entitySelected == entity)) {
             _hasSelected = true;
