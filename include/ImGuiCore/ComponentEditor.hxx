@@ -36,8 +36,6 @@ public:
         if (!gSceneManager.getCurrentLevel().isRegister<T>()) gSceneManager.getCurrentLevel().RegisterComponent<T>();
         gSceneManager.getCurrentLevel().AddComponent<T>(entity, component);
     }
-    template <>
-    void addComponent(Entity entity, RenderObject renderObject);
 private:
     template <typename T>
     void addComponent(T component)
@@ -46,8 +44,6 @@ private:
             gSceneManager.getCurrentLevel().RegisterComponent<T>();
         gSceneManager.getCurrentLevel().AddComponent<T>(currentEntity, component);
     }
-    template <>
-    void addComponent(RenderObject renderObject);
     template <typename T>
     void displayComponent(std::string name)
     {
@@ -73,3 +69,8 @@ private :
     std::array<std::string, 8> textures = {"rouge", "vert", "bleu", "cyan", "orange", "jaune", "blanc", "violet"};
     std::array<std::string, 2> models = {"cube", "plane"};
 };
+
+template <>
+void ComponentEditor::addComponent(Entity entity, RenderObject renderObject);
+template <>
+void ComponentEditor::addComponent(RenderObject renderObject);

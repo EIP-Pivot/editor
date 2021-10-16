@@ -9,7 +9,7 @@
 class EntityModule
 {
 public:
-    EntityModule(): entitySelected(-1), _hasSelected(false) {};
+    EntityModule(): entitySelected(-1), _hasSelected(false), currentScene(-1) {};
     void create();
     Entity addEntity();
     Entity addEntity(std::string name);
