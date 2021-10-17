@@ -1,9 +1,11 @@
 #pragma once
 
 #include <imgui.h>
+
 #include <ImGuizmo.h>
 
 #include <pivot/ecs/Core/SceneManager.hxx>
+#include <pivot/graphics/config.hxx>
 
 class Editor
 {
@@ -26,7 +28,7 @@ public:
 
 private:
     void createPopUp();
-    
+
     bool run;
     Camera camera;
     ImGuizmo::OPERATION currentGizmoOperation;
@@ -34,4 +36,12 @@ private:
     bool useSnap;
     float aspectRatio;
     float snap[3] = {20.f, 20.f, 20.f};
+
+#ifdef CULLING_DEBUG
+public:
+    Camera cullingCamera;
+    bool cullingCameraFollowsCamera = true;
+
+private:
+#endif
 };

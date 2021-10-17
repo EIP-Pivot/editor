@@ -56,12 +56,13 @@ public:
         std::uniform_int_distribution<int> randTexture(0, textures.size() - 1);
         auto newEntity = entity.addEntity();
         if (newEntity == 1997)
-            gSceneManager.getCurrentLevel().GetComponent<Tag>(newEntity).name = "Best Entity = " + std::to_string(newEntity);
+            gSceneManager.getCurrentLevel().GetComponent<Tag>(newEntity).name =
+                "Best Entity = " + std::to_string(newEntity);
         else
             gSceneManager.getCurrentLevel().GetComponent<Tag>(newEntity).name = "Entity " + std::to_string(newEntity);
         componentEditor.addComponent<Gravity>(newEntity, {
-                        .force = glm::vec3(0.0f, randGravity(generator), 0.0f),
-                    });
+                                                             .force = glm::vec3(0.0f, randGravity(generator), 0.0f),
+                                                         });
         componentEditor.addComponent<RigidBody>(
             newEntity,
             {
@@ -71,15 +72,16 @@ public:
         glm::vec3 position = glm::vec3(randPositionXZ(generator), randPositionY(generator), randPositionXZ(generator));
         glm::vec3 rotation = glm::vec3(randRotation(generator), randRotation(generator), randRotation(generator));
         glm::vec3 scale = glm::vec3(randScale(generator));
-        componentEditor.addComponent<RenderObject>(newEntity, {
-                        .meshID = object,
-                        .objectInformation =
-                            {
-                                .transform = Transform(position, rotation, scale),
-                                .textureIndex = textures[randTexture(generator)],
-                                .materialIndex = "white",
-                            },
-                    });
+        componentEditor.addComponent<RenderObject>(newEntity,
+                                                   {
+                                                       .meshID = object,
+                                                       .objectInformation =
+                                                           {
+                                                               .transform = Transform(position, rotation, scale),
+                                                               .textureIndex = textures[randTexture(generator)],
+                                                               .materialIndex = "white",
+                                                           },
+                                                   });
     }
 
     void DemoScene()
@@ -132,6 +134,11 @@ public:
         window.setKeyPressCallback(Window::Key::A, key_lambda_press);
         window.setKeyPressCallback(Window::Key::SPACE, key_lambda_press);
         window.setKeyPressCallback(Window::Key::LEFT_SHIFT, key_lambda_press);
+#ifdef CULLING_DEBUG
+        window.setKeyPressCallback(Window::Key::C, [this](Window &window, const Window::Key key) {
+            this->editor.cullingCameraFollowsCamera = !this->editor.cullingCameraFollowsCamera;
+        });
+#endif
         // Release action
         window.setKeyReleaseCallback(Window::Key::W, key_lambda_release);
         window.setKeyReleaseCallback(Window::Key::S, key_lambda_release);
@@ -174,8 +181,7 @@ public:
             imGuiManager.newFrame();
 
             editor.create();
-            if (!editor.getRun())
-            {
+            if (!editor.getRun()) {
                 editor.setAspectRatio(getAspectRatio());
                 entity.create();
                 entity.hasSelected() ? componentEditor.create(entity.getEntitySelected()) : componentEditor.create();
@@ -185,14 +191,24 @@ public:
                     gSceneManager.getCurrentLevel().hasComponent<RenderObject>(entity.getEntitySelected())) {
                     editor.DisplayGuizmo(entity.getEntitySelected());
                 }
-            }
-            else {
+            } else {
                 gSceneManager.getCurrentLevel().Update(dt);
             }
 
             imGuiManager.render();
 
-            draw(componentEditor.getObject(), camera.getGPUCameraData(80.f, getAspectRatio()));
+            auto aspectRatio = getAspectRatio();
+            float fov = 80;
+
+#ifdef CULLING_DEBUG
+            if (editor.cullingCameraFollowsCamera) editor.cullingCamera = camera;
+#endif
+            draw(componentEditor.getObject(), camera.getGPUCameraData(fov, aspectRatio)
+#ifdef CULLING_DEBUG
+                                                  ,
+                 std::make_optional(editor.cullingCamera.getGPUCameraData(fov, aspectRatio))
+#endif
+            );
             fpsLimiter.sleep();
             auto stopTime = std::chrono::high_resolution_clock::now();
             dt = std::chrono::duration<float>(stopTime - startTime).count();
