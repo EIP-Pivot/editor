@@ -136,7 +136,7 @@ public:
         window.setKeyPressCallback(Window::Key::LEFT_SHIFT, key_lambda_press);
 #ifdef CULLING_DEBUG
         window.setKeyPressCallback(Window::Key::C, [this](Window &window, const Window::Key key) {
-            this->cullingCameraFollowsCamera = !this->cullingCameraFollowsCamera;
+            this->editor.cullingCameraFollowsCamera = !this->editor.cullingCameraFollowsCamera;
         });
 #endif
         // Release action
@@ -201,12 +201,12 @@ public:
             float fov = 80;
 
 #ifdef CULLING_DEBUG
-            if (cullingCameraFollowsCamera) cullingCamera = camera;
+            if (editor.cullingCameraFollowsCamera) editor.cullingCamera = camera;
 #endif
             draw(componentEditor.getObject(), camera.getGPUCameraData(fov, aspectRatio)
 #ifdef CULLING_DEBUG
                                                   ,
-                 std::make_optional(cullingCamera.getGPUCameraData(fov, aspectRatio))
+                 std::make_optional(editor.cullingCamera.getGPUCameraData(fov, aspectRatio))
 #endif
             );
             fpsLimiter.sleep();
@@ -227,10 +227,6 @@ public:
     bool bFirstMouse = true;
     std::bitset<UINT16_MAX> button;
     int gridSize;
-#ifdef CULLING_DEBUG
-    Camera cullingCamera;
-    bool cullingCameraFollowsCamera = true;
-#endif
 };
 
 int main()
