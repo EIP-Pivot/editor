@@ -36,10 +36,6 @@
 
 Logger *logger = nullptr;
 
-const std::vector<glm::vec3> viking_room_positions{
-    {-10.0f, 2.f, 0.0f}, {-20.0f, 2.f, 0.0f}, {-30.0f, 2.f, 0.0f}, {-40.0f, 2.f, 0.0f}, {-50.0f, 2.f, 0.0f},
-};
-
 class Application : public VulkanApplication
 {
 public:
@@ -138,9 +134,11 @@ public:
         window.setKeyPressCallback(Window::Key::A, key_lambda_press);
         window.setKeyPressCallback(Window::Key::SPACE, key_lambda_press);
         window.setKeyPressCallback(Window::Key::LEFT_SHIFT, key_lambda_press);
+#ifdef CULLING_DEBUG
         window.setKeyPressCallback(Window::Key::C, [this](Window &window, const Window::Key key) {
-            this->culling_camera_follows_camera = !this->culling_camera_follows_camera;
+            this->cullingCameraFollowsCamera = !this->cullingCameraFollowsCamera;
         });
+#endif
         // Release action
         window.setKeyReleaseCallback(Window::Key::W, key_lambda_release);
         window.setKeyReleaseCallback(Window::Key::S, key_lambda_release);
@@ -199,9 +197,18 @@ public:
 
             imGuiManager.render();
 
-            if (culling_camera_follows_camera) culling_camera = camera;
-            draw(componentEditor.getObject(), camera.getGPUCameraData(80.f, getAspectRatio()),
-                 std::make_optional(culling_camera.getGPUCameraData(80.f, getAspectRatio())));
+            auto aspectRatio = getAspectRatio();
+            float fov = 80;
+
+#ifdef CULLING_DEBUG
+            if (cullingCameraFollowsCamera) cullingCamera = camera;
+#endif
+            draw(componentEditor.getObject(), camera.getGPUCameraData(fov, aspectRatio)
+#ifdef CULLING_DEBUG
+                                                  ,
+                 std::make_optional(cullingCamera.getGPUCameraData(fov, aspectRatio))
+#endif
+            );
             fpsLimiter.sleep();
             auto stopTime = std::chrono::high_resolution_clock::now();
             dt = std::chrono::duration<float>(stopTime - startTime).count();
@@ -215,13 +222,15 @@ public:
     ComponentEditor componentEditor;
     SystemsEditor systemsEditor;
     Camera &camera;
-    Camera culling_camera;
     glm::dvec2 last;
 
     bool bFirstMouse = true;
     std::bitset<UINT16_MAX> button;
     int gridSize;
-    bool culling_camera_follows_camera = true;
+#ifdef CULLING_DEBUG
+    Camera cullingCamera;
+    bool cullingCameraFollowsCamera = true;
+#endif
 };
 
 int main()
