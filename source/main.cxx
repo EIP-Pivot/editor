@@ -117,15 +117,9 @@ public:
 
         auto key_lambda_press = [&](Window &window, const Window::Key key) {
             button.set(static_cast<std::size_t>(key));
-            Event event(Events::Window::INPUT);
-            event.SetParam(Events::Window::Input::INPUT, button);
-            gSceneManager.getCurrentLevel().SendEvent(event);
         };
         auto key_lambda_release = [&](Window &window, const Window::Key key) {
             button.reset(static_cast<std::size_t>(key));
-            Event event(Events::Window::INPUT);
-            event.SetParam(Events::Window::Input::INPUT, button);
-            gSceneManager.getCurrentLevel().SendEvent(event);
         };
         // Press action
         window.setKeyPressCallback(Window::Key::W, key_lambda_press);
@@ -164,6 +158,53 @@ public:
         loadTextures({"../assets/rouge.png", "../assets/vert.png", "../assets/bleu.png", "../assets/cyan.png",
                       "../assets/orange.png", "../assets/jaune.png", "../assets/blanc.png", "../assets/violet.png"});
     }
+    void processKeyboard(const Camera::Movement direction, float dt) noexcept
+    {
+        switch (direction) {
+            case Camera::Movement::FORWARD: {
+                camera.position.x += camera.front.x * 2.5f * (dt * 500);
+                camera.position.z += camera.front.z * 2.5f * (dt * 500);
+            } break;
+            case Camera::Movement::BACKWARD: {
+                camera.position.x -= camera.front.x * 2.5f * (dt * 500);
+                camera.position.z -= camera.front.z * 2.5f * (dt * 500);
+            } break;
+            case Camera::Movement::RIGHT: {
+                camera.position.x += camera.right.x * 2.5f * (dt * 500);
+                camera.position.z += camera.right.z * 2.5f * (dt * 500);
+            } break;
+            case Camera::Movement::LEFT: {
+                camera.position.x -= camera.right.x * 2.5f * (dt * 500);
+                camera.position.z -= camera.right.z * 2.5f * (dt * 500);
+            } break;
+            case Camera::Movement::UP: {
+                camera.position.y += 2.5f * (dt * 500);
+            } break;
+            case Camera::Movement::DOWN: camera.position.y -= 2.5f * (dt * 500); break;
+        }
+    }
+
+    void UpdateCamera(float dt)
+    {
+        try {
+            if (button.test(static_cast<std::size_t>(Window::Key::W)))
+                processKeyboard(Camera::FORWARD, dt);
+            else if (button.test(static_cast<std::size_t>(Window::Key::S)))
+                processKeyboard(Camera::BACKWARD, dt);
+
+            if (button.test(static_cast<std::size_t>(Window::Key::A)))
+                processKeyboard(Camera::LEFT, dt);
+            else if (button.test(static_cast<std::size_t>(Window::Key::D)))
+                processKeyboard(Camera::RIGHT, dt);
+
+            if (button.test(static_cast<std::size_t>(Window::Key::SPACE)))
+                processKeyboard(Camera::UP, dt);
+            else if (button.test(static_cast<std::size_t>(Window::Key::LEFT_SHIFT)))
+                processKeyboard(Camera::DOWN, dt);
+        } catch (const std::exception &e) {
+            std::cerr << e.what() << std::endl;
+        }
+    }
 
     void run()
     {
@@ -194,6 +235,7 @@ public:
             } else {
                 gSceneManager.getCurrentLevel().Update(dt);
             }
+            UpdateCamera(dt);
 
             imGuiManager.render();
 
