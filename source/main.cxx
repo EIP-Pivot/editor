@@ -110,16 +110,17 @@ public:
         window.setKeyReleaseCallback(Window::Key::LEFT_ALT, [&](Window &window, const Window::Key key) {
             window.captureCursor(!window.captureCursor());
             bFirstMouse = window.captureCursor();
+            button.reset();
         });
         window.setKeyReleaseCallback(Window::Key::V, [&](Window &window, const Window::Key key) {
             gSceneManager.getCurrentLevel().switchCamera();
         });
 
         auto key_lambda_press = [&](Window &window, const Window::Key key) {
-            button.set(static_cast<std::size_t>(key));
+            if (window.captureCursor()) button.set(static_cast<std::size_t>(key));
         };
         auto key_lambda_release = [&](Window &window, const Window::Key key) {
-            button.reset(static_cast<std::size_t>(key));
+            if (window.captureCursor()) button.reset(static_cast<std::size_t>(key));
         };
         // Press action
         window.setKeyPressCallback(Window::Key::W, key_lambda_press);
