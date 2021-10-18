@@ -131,7 +131,8 @@ public:
         window.setKeyPressCallback(Window::Key::LEFT_SHIFT, key_lambda_press);
 #ifdef CULLING_DEBUG
         window.setKeyPressCallback(Window::Key::C, [this](Window &window, const Window::Key key) {
-            this->editor.cullingCameraFollowsCamera = !this->editor.cullingCameraFollowsCamera;
+            if (window.captureCursor())
+                this->editor.cullingCameraFollowsCamera = !this->editor.cullingCameraFollowsCamera;
         });
 #endif
         // Release action
