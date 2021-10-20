@@ -92,14 +92,17 @@ void Editor::setAspectRatio(float aspect) { aspectRatio = aspect; }
 
 void Editor::DisplayGuizmo(Entity entity)
 {
-    const float *view = glm::value_ptr(camera.getView());
-    const float *projection = glm::value_ptr(camera.getProjection(80.0f, aspectRatio, 0.1f));
+    const auto view = camera.getView();
+    const auto projection = camera.getProjection(80.9f, aspectRatio);
+
+    const float *view_ptr = glm::value_ptr(view);
+    const float *projection_ptr = glm::value_ptr(projection);
     float *matrix = glm::value_ptr(gSceneManager.getCurrentLevel()
                                        .GetComponent<RenderObject>(entity)
                                        .objectInformation.transform.getModelMatrix());
     ImGuiIO &io = ImGui::GetIO();
     ImGuizmo::SetRect(0, 0, io.DisplaySize.x, io.DisplaySize.y);
-    ImGuizmo::Manipulate(view, projection, currentGizmoOperation, currentGizmoMode, matrix, NULL,
+    ImGuizmo::Manipulate(view_ptr, projection_ptr, currentGizmoOperation, currentGizmoMode, matrix, NULL,
                          useSnap ? &snap[0] : NULL);
 }
 
