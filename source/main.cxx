@@ -158,7 +158,7 @@ public:
         });
         load3DModels({"../assets/plane.obj", "../assets/cube.obj"});
         loadTextures({"../assets/rouge.png", "../assets/vert.png", "../assets/bleu.png", "../assets/cyan.png",
-                      "../assets/orange.png", "../assets/jaune.png", "../assets/blanc.png", "../assets/violet.png"});
+                      "../assets/orange.png", "../assets/jaune.png", "../assets/blanc.png", "../assets/violet.png", "../assets/greystone.png"});
     }
     void processKeyboard(const Camera::Movement direction, float dt) noexcept
     {
@@ -221,7 +221,7 @@ public:
             auto startTime = std::chrono::high_resolution_clock::now();
             window.pollEvent();
 
-            imGuiManager.newFrame();
+            imGuiManager.newFrame(*this);
 
             editor.create();
             if (!editor.getRun()) {

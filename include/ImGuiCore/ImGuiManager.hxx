@@ -5,9 +5,12 @@
 #include <backends/imgui_impl_vulkan.h>
 #include <ImGuizmo.h>
 
+#include <pivot/graphics/VulkanApplication.hxx>
+
+
 class ImGuiManager
 {
 public:
-    void newFrame();
+    void newFrame(VulkanApplication &);
     void render();
 };
