@@ -11,7 +11,7 @@ void PhysicsSystem::Update(float dt)
 {
     for (auto const &entity: mEntities) {
         auto &rigidBody = gSceneManager.getCurrentLevel().GetComponent<RigidBody>(entity);
-        auto &renderObject = gSceneManager.getCurrentLevel().GetComponent<RenderObject>(entity);
+        auto &renderObject = gSceneManager.getCurrentLevel().GetComponent<pivot::graphics::RenderObject>(entity);
 
         // Forces
         auto const &gravity = gSceneManager.getCurrentLevel().GetComponent<Gravity>(entity);
@@ -24,8 +24,8 @@ void PhysicsSystem::Update(float dt)
 
 Signature PhysicsSystem::getSignature()
 {
-    if (!gSceneManager.getCurrentLevel().isRegister<RenderObject>())
-        gSceneManager.getCurrentLevel().RegisterComponent<RenderObject>();
+    if (!gSceneManager.getCurrentLevel().isRegister<pivot::graphics::RenderObject>())
+        gSceneManager.getCurrentLevel().RegisterComponent<pivot::graphics::RenderObject>();
     if (!gSceneManager.getCurrentLevel().isRegister<Gravity>())
         gSceneManager.getCurrentLevel().RegisterComponent<Gravity>();
     if (!gSceneManager.getCurrentLevel().isRegister<RigidBody>())
@@ -33,6 +33,6 @@ Signature PhysicsSystem::getSignature()
     Signature signature;
     signature.set(gSceneManager.getCurrentLevel().GetComponentType<Gravity>());
     signature.set(gSceneManager.getCurrentLevel().GetComponentType<RigidBody>());
-    signature.set(gSceneManager.getCurrentLevel().GetComponentType<RenderObject>());
+    signature.set(gSceneManager.getCurrentLevel().GetComponentType<pivot::graphics::RenderObject>());
     return signature;
 }

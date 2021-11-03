@@ -18,7 +18,7 @@
 
 extern SceneManager gSceneManager;
 
-using ObjectVector = std::vector<std::reference_wrapper<const RenderObject>>;
+using ObjectVector = std::vector<std::reference_wrapper<const pivot::graphics::RenderObject>>;
 
 class ComponentEditor
 {
@@ -58,7 +58,7 @@ private:
     void createPopUp();
     void createComponent(RigidBody &rigidBody);
     void createComponent(Gravity &gravity);
-    void createComponent(RenderObject &renderObject);
+    void createComponent(pivot::graphics::RenderObject &renderObject);
 
 private :
     Entity currentEntity;
@@ -71,6 +71,6 @@ private :
 };
 
 template <>
-void ComponentEditor::addComponent(Entity entity, RenderObject renderObject);
+void ComponentEditor::addComponent(Entity entity, pivot::graphics::RenderObject renderObject);
 template <>
-void ComponentEditor::addComponent(RenderObject renderObject);
+void ComponentEditor::addComponent(pivot::graphics::RenderObject renderObject);

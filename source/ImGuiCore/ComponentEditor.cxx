@@ -9,7 +9,7 @@ void ComponentEditor::create(Entity entity)
     ImGui::InputText("Name", &gSceneManager.getCurrentLevel().getEntityName(currentEntity));
     displayComponent<RigidBody>("Rigid body");
     displayComponent<Gravity>("Gravity");
-    displayComponent<RenderObject>("Render Object");
+    displayComponent<pivot::graphics::RenderObject>("Render Object");
     if (ImGui::Button("Add Component")) { ImGui::OpenPopup("AddComponent"); }
     ImGui::End();
 }
@@ -36,9 +36,9 @@ void ComponentEditor::createPopUp()
         if (!gSceneManager.getCurrentLevel().hasComponent<Gravity>(currentEntity)) {
             if (ImGui::MenuItem("Gravity")) { addComponent<Gravity>(Gravity()); }
         }
-        if (!gSceneManager.getCurrentLevel().hasComponent<RenderObject>(currentEntity)) {
+        if (!gSceneManager.getCurrentLevel().hasComponent<pivot::graphics::RenderObject>(currentEntity)) {
             if (ImGui::MenuItem("Render object")) {
-                addComponent<RenderObject>({
+                addComponent<pivot::graphics::RenderObject>({
                     .meshID = "cube",
                     .objectInformation =
                         {
@@ -55,7 +55,7 @@ void ComponentEditor::createPopUp()
         for (std::string texture: textures) {
             if (ImGui::MenuItem(texture.c_str())) {
                 gSceneManager.getCurrentLevel()
-                    .GetComponent<RenderObject>(currentEntity)
+                    .GetComponent<pivot::graphics::RenderObject>(currentEntity)
                     .objectInformation.textureIndex = texture;
             }
         }
@@ -64,7 +64,8 @@ void ComponentEditor::createPopUp()
     if (ImGui::BeginPopup("Models")) {
         for (std::string model: models) {
             if (ImGui::MenuItem(model.c_str())) {
-                gSceneManager.getCurrentLevel().GetComponent<RenderObject>(currentEntity).meshID = model;
+                gSceneManager.getCurrentLevel().GetComponent<pivot::graphics::RenderObject>(currentEntity).meshID =
+                    model;
             }
         }
         ImGui::EndPopup();
@@ -86,7 +87,7 @@ void ComponentEditor::createComponent(Gravity &gravity)
     ImGui::Unindent();
 }
 
-void ComponentEditor::createComponent(RenderObject &renderObject)
+void ComponentEditor::createComponent(pivot::graphics::RenderObject &renderObject)
 {
     ImGui::Indent();
     if (ImGui::InputFloat3("Tr", glm::value_ptr(matrixTranslation)))
@@ -96,32 +97,33 @@ void ComponentEditor::createComponent(RenderObject &renderObject)
     if (ImGui::InputFloat3("Sc", glm::value_ptr(matrixScale)))
         renderObject.objectInformation.transform.setScale(matrixScale);
     if (ImGui::Selectable(gSceneManager.getCurrentLevel()
-                              .GetComponent<RenderObject>(currentEntity)
+                              .GetComponent<pivot::graphics::RenderObject>(currentEntity)
                               .objectInformation.textureIndex.c_str(),
                           false, 0, ImVec2(50, 15)))
         ImGui::OpenPopup("Textures");
-    if (ImGui::Selectable(gSceneManager.getCurrentLevel().GetComponent<RenderObject>(currentEntity).meshID.c_str(),
-                          false, 0, ImVec2(50, 15)))
+    if (ImGui::Selectable(
+            gSceneManager.getCurrentLevel().GetComponent<pivot::graphics::RenderObject>(currentEntity).meshID.c_str(),
+            false, 0, ImVec2(50, 15)))
         ImGui::OpenPopup("Models");
     ImGui::Unindent();
 }
 
 template <>
-void ComponentEditor::addComponent(RenderObject renderObject)
+void ComponentEditor::addComponent(pivot::graphics::RenderObject renderObject)
 {
-    if (!gSceneManager.getCurrentLevel().isRegister<RenderObject>())
-        gSceneManager.getCurrentLevel().RegisterComponent<RenderObject>();
-    gSceneManager.getCurrentLevel().AddComponent<RenderObject>(currentEntity, renderObject);
+    if (!gSceneManager.getCurrentLevel().isRegister<pivot::graphics::RenderObject>())
+        gSceneManager.getCurrentLevel().RegisterComponent<pivot::graphics::RenderObject>();
+    gSceneManager.getCurrentLevel().AddComponent<pivot::graphics::RenderObject>(currentEntity, renderObject);
     sceneObject[gSceneManager.getCurrentLevelId()].push_back(
-        gSceneManager.getCurrentLevel().GetComponent<RenderObject>(currentEntity));
+        gSceneManager.getCurrentLevel().GetComponent<pivot::graphics::RenderObject>(currentEntity));
 }
 
 template <>
-void ComponentEditor::addComponent(Entity entity, RenderObject renderObject)
+void ComponentEditor::addComponent(Entity entity, pivot::graphics::RenderObject renderObject)
 {
-    if (!gSceneManager.getCurrentLevel().isRegister<RenderObject>())
-        gSceneManager.getCurrentLevel().RegisterComponent<RenderObject>();
-    gSceneManager.getCurrentLevel().AddComponent<RenderObject>(entity, renderObject);
+    if (!gSceneManager.getCurrentLevel().isRegister<pivot::graphics::RenderObject>())
+        gSceneManager.getCurrentLevel().RegisterComponent<pivot::graphics::RenderObject>();
+    gSceneManager.getCurrentLevel().AddComponent<pivot::graphics::RenderObject>(entity, renderObject);
     sceneObject[gSceneManager.getCurrentLevelId()].push_back(
-        gSceneManager.getCurrentLevel().GetComponent<RenderObject>(entity));
+        gSceneManager.getCurrentLevel().GetComponent<pivot::graphics::RenderObject>(entity));
 }

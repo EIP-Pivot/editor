@@ -61,7 +61,7 @@ void Editor::create()
     ImGui::Text("X: %f Y: %f", io.MousePos.x, io.MousePos.y);
     ImGui::Text("Fps: %.1f", ImGui::GetIO().Framerate);
     ImGui::Text("ms/frame %.3f", 1000.0f / ImGui::GetIO().Framerate);
-#ifdef CULLING_DEBUG
+#ifdef PIVOT_CULLING_DEBUG
     ImGui::Text("Culling separated from camera: %s", std::to_string(!cullingCameraFollowsCamera).c_str());
 #endif
     ImGui::Checkbox("Systems", &run);
@@ -98,7 +98,7 @@ void Editor::DisplayGuizmo(Entity entity)
     const float *view_ptr = glm::value_ptr(view);
     const float *projection_ptr = glm::value_ptr(projection);
     float *matrix = glm::value_ptr(gSceneManager.getCurrentLevel()
-                                       .GetComponent<RenderObject>(entity)
+                                       .GetComponent<pivot::graphics::RenderObject>(entity)
                                        .objectInformation.transform.getModelMatrix());
     ImGuiIO &io = ImGui::GetIO();
     ImGuizmo::SetRect(0, 0, io.DisplaySize.x, io.DisplaySize.y);

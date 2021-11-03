@@ -36,10 +36,10 @@
 
 Logger *logger = nullptr;
 
-class Application : public VulkanApplication
+class Application : public pivot::graphics::VulkanApplication
 {
 public:
-    Application(): VulkanApplication(), editor(Editor()), camera(editor.getCamera()){};
+    Application(): VulkanApplication(), imGuiManager(*this), editor(Editor()), camera(editor.getCamera()){};
 
     void addRandomObject(std::string object)
     {
@@ -72,16 +72,16 @@ public:
         glm::vec3 position = glm::vec3(randPositionXZ(generator), randPositionY(generator), randPositionXZ(generator));
         glm::vec3 rotation = glm::vec3(randRotation(generator), randRotation(generator), randRotation(generator));
         glm::vec3 scale = glm::vec3(randScale(generator));
-        componentEditor.addComponent<RenderObject>(newEntity,
-                                                   {
-                                                       .meshID = object,
-                                                       .objectInformation =
-                                                           {
-                                                               .transform = Transform(position, rotation, scale),
-                                                               .textureIndex = textures[randTexture(generator)],
-                                                               .materialIndex = "white",
-                                                           },
-                                                   });
+        componentEditor.addComponent<pivot::graphics::RenderObject>(
+            newEntity, {
+                           .meshID = object,
+                           .objectInformation =
+                               {
+                                   .transform = Transform(position, rotation, scale),
+                                   .textureIndex = textures[randTexture(generator)],
+                                   .materialIndex = "white",
+                               },
+                       });
     }
 
     void DemoScene()
@@ -89,7 +89,7 @@ public:
         editor.addScene("Demo");
         systemsEditor.addSystem<PhysicsSystem>();
 
-        std::vector<Entity> entities(MAX_OBJECT - 1);
+        std::vector<Entity> entities(PIVOT_MAX_OBJECT - 1);
 
         for (auto &_entity: entities) { addRandomObject("cube"); }
     }
@@ -98,7 +98,6 @@ public:
     {
         LevelId defaultScene = editor.addScene("Default");
         DemoScene();
-        gSceneManager.setCurrentLevelId(defaultScene);
     }
 
     void init()
@@ -106,7 +105,6 @@ public:
         gSceneManager.Init();
         loadScene();
 
-        window.captureCursor(true);
         window.setKeyReleaseCallback(Window::Key::LEFT_ALT, [&](Window &window, const Window::Key key) {
             window.captureCursor(!window.captureCursor());
             bFirstMouse = window.captureCursor();
@@ -129,7 +127,7 @@ public:
         window.setKeyPressCallback(Window::Key::A, key_lambda_press);
         window.setKeyPressCallback(Window::Key::SPACE, key_lambda_press);
         window.setKeyPressCallback(Window::Key::LEFT_SHIFT, key_lambda_press);
-#ifdef CULLING_DEBUG
+#ifdef PIVOT_CULLING_DEBUG
         window.setKeyPressCallback(Window::Key::C, [this](Window &window, const Window::Key key) {
             if (window.captureCursor())
                 this->editor.cullingCameraFollowsCamera = !this->editor.cullingCameraFollowsCamera;
@@ -216,12 +214,13 @@ public:
         Entity currentEdit = 0;
         gridSize = 100.f;
         this->VulkanApplication::init();
+        imGuiManager.init();
         FrameLimiter<60> fpsLimiter;
         while (!window.shouldClose()) {
             auto startTime = std::chrono::high_resolution_clock::now();
             window.pollEvent();
 
-            imGuiManager.newFrame(*this);
+            imGuiManager.newFrame();
 
             editor.create();
             if (!editor.getRun()) {
@@ -230,8 +229,8 @@ public:
                 entity.hasSelected() ? componentEditor.create(entity.getEntitySelected()) : componentEditor.create();
                 systemsEditor.create();
 
-                if (entity.hasSelected() &&
-                    gSceneManager.getCurrentLevel().hasComponent<RenderObject>(entity.getEntitySelected())) {
+                if (entity.hasSelected() && gSceneManager.getCurrentLevel().hasComponent<pivot::graphics::RenderObject>(
+                                                entity.getEntitySelected())) {
                     editor.DisplayGuizmo(entity.getEntitySelected());
                 }
             } else {
@@ -244,11 +243,11 @@ public:
             auto aspectRatio = getAspectRatio();
             float fov = 80;
 
-#ifdef CULLING_DEBUG
+#ifdef PIVOT_CULLING_DEBUG
             if (editor.cullingCameraFollowsCamera) editor.cullingCamera = camera;
 #endif
             draw(componentEditor.getObject(), camera.getGPUCameraData(fov, aspectRatio)
-#ifdef CULLING_DEBUG
+#ifdef PIVOT_CULLING_DEBUG
                                                   ,
                  std::make_optional(editor.cullingCamera.getGPUCameraData(fov, aspectRatio))
 #endif

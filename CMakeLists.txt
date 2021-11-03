@@ -23,20 +23,20 @@ if (LOCAL_PIVOT_DIRECTORY STREQUAL "")
     FetchContent_Declare(
         pivot
         GIT_REPOSITORY https://github.com/EIP-Pivot/pivot.git
-        GIT_TAG v0.1.0-a.2
+        GIT_TAG e7c556e197ae8f252b3049542574d47e9f594ba5
     )
     if (NOT pivot_POPULATED)
         message(STATUS "Populating pivot")
         FetchContent_Populate(pivot)
         add_subdirectory(${pivot_SOURCE_DIR} ${pivot_BINARY_DIR})
-        target_compile_definitions(pivot-graphics PUBLIC
-            MAX_PROJECTION_LIMIT=10000.0f
+        target_compile_definitions(pivot-ecs PUBLIC
+            PIVOT_MAX_PROJECTION_LIMIT=1000000.0f
         )
     endif()
 else()
     add_subdirectory(${LOCAL_PIVOT_DIRECTORY} ${CMAKE_BINARY_DIR}/game-engine)
-    target_compile_definitions(pivot-graphics PUBLIC
-        MAX_PROJECTION_LIMIT=1000.0f
+    target_compile_definitions(pivot-ecs PUBLIC
+        PIVOT_MAX_PROJECTION_LIMIT=1000000.0f
     )
 endif()
 

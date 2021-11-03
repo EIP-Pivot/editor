@@ -3,20 +3,35 @@
 
 extern SceneManager gSceneManager;
 
-void ImGuiManager::newFrame(VulkanApplication &app)
+ImGuiManager::ImGuiManager(pivot::graphics::VulkanApplication &app): app(app) {}
+
+void ImGuiManager::init()
 {
-    static auto image = ImGui_ImplVulkan_AddTexture(app.textureSampler, app.loadedTextures.at("greystone").imageView,
-                                                    VK_IMAGE_LAYOUT_SHADER_READ_ONLY_OPTIMAL);
-    static auto image2 = ImGui_ImplVulkan_AddTexture(app.textureSampler, app.loadedTextures.at("rouge").imageView,
-                                                     VK_IMAGE_LAYOUT_SHADER_READ_ONLY_OPTIMAL);
+    for (auto [image, imageView, _]: app.get().getViewportSwapchain().getImages()) {
+        text.push_back(ImGui_ImplVulkan_AddTexture(app.get().getViewportSampler(), imageView,
+                                                   VK_IMAGE_LAYOUT_SHADER_READ_ONLY_OPTIMAL));
+    }
+}
+void ImGuiManager::newFrame()
+{
     ImGui_ImplVulkan_NewFrame();
     ImGui_ImplGlfw_NewFrame();
     ImGui::NewFrame();
     ImGuizmo::BeginFrame();
 
-    ImGui::Begin("h");
-    ImGui::Image(image, {800, 800});
-    ImGui::Image(image2, {800, 800});
+    if (ImGui::Begin("Render")) {
+        auto windowSize = ImGui::GetWindowSize();
+        if (windowSize.y != viewportSize.y || windowSize.x != viewportSize.x) {
+            app.get().recreateViewport(vk::Extent2D{
+                .width = static_cast<uint32_t>(windowSize.x),
+                .height = static_cast<uint32_t>(windowSize.y),
+            });
+            text.clear();
+            init();
+        }
+        std::swap(windowSize, viewportSize);
+        ImGui::Image(text.at(app.get().getCurrentFrame()), viewportSize);
+    }
     ImGui::End();
 }
 

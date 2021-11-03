@@ -5,14 +5,14 @@
 #include <ImGuizmo.h>
 
 #include <pivot/ecs/Core/SceneManager.hxx>
-#include <pivot/graphics/config.hxx>
+#include <pivot/graphics/common.hxx>
 
 class Editor
 {
 public:
     Editor()
         : run(false),
-          camera(Camera(glm::vec3(0, 200, 500))),
+          camera(Camera(glm::vec3(0, 0, 0))),
           currentGizmoOperation(ImGuizmo::TRANSLATE),
           currentGizmoMode(ImGuizmo::LOCAL),
           useSnap(false),
@@ -37,7 +37,7 @@ private:
     float aspectRatio;
     float snap[3] = {20.f, 20.f, 20.f};
 
-#ifdef CULLING_DEBUG
+#ifdef PIVOT_CULLING_DEBUG
 public:
     Camera cullingCamera;
     bool cullingCameraFollowsCamera = true;
