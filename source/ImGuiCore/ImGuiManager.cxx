@@ -20,16 +20,19 @@ void ImGuiManager::newFrame()
     ImGuizmo::BeginFrame();
 
     if (ImGui::Begin("Render")) {
-        auto windowSize = ImGui::GetWindowSize();
+        auto windowSize = ImGui::GetContentRegionAvail();
         if (windowSize.y != viewportSize.y || windowSize.x != viewportSize.x) {
+            bIsResizing = true;
+            std::swap(windowSize, viewportSize);
+        } else if (bIsResizing) {
             app.get().recreateViewport(vk::Extent2D{
-                .width = static_cast<uint32_t>(windowSize.x),
-                .height = static_cast<uint32_t>(windowSize.y),
+                .width = static_cast<uint32_t>(viewportSize.x),
+                .height = static_cast<uint32_t>(viewportSize.y),
             });
             text.clear();
             init();
+            bIsResizing = false;
         }
-        std::swap(windowSize, viewportSize);
         ImGui::Image(text.at(app.get().getCurrentFrame()), viewportSize);
     }
     ImGui::End();

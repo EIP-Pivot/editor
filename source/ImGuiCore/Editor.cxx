@@ -1,4 +1,6 @@
 #include "ImGuiCore/Editor.hxx"
+
+#include <pivot/graphics/types/RenderObject.hxx>
 #include <glm/gtc/type_ptr.hpp>
 #include <misc/cpp/imgui_stdlib.h>
 

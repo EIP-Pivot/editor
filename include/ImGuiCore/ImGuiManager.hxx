@@ -20,4 +20,5 @@ private:
     std::reference_wrapper<pivot::graphics::VulkanApplication> app;
     std::vector<ImTextureID> text;
     ImVec2 viewportSize;
+    bool bIsResizing = false;
 };
