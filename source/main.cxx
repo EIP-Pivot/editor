@@ -214,17 +214,22 @@ public:
         Entity currentEdit = 0;
         gridSize = 100.f;
         this->VulkanApplication::init();
+
         imGuiManager.init();
         FrameLimiter<60> fpsLimiter;
         while (!window.shouldClose()) {
             auto startTime = std::chrono::high_resolution_clock::now();
             window.pollEvent();
 
+            UpdateCamera(dt);
+            auto aspectRatio = pivot::graphics::ISwapchain::swapchainAspectRatio(getViewportSwapchain());
+
+#ifndef PIVOT_NO_VIEWPORT
             imGuiManager.newFrame();
 
             editor.create();
             if (!editor.getRun()) {
-                editor.setAspectRatio(getAspectRatio());
+                editor.setAspectRatio(aspectRatio);
                 entity.create();
                 entity.hasSelected() ? componentEditor.create(entity.getEntitySelected()) : componentEditor.create();
                 systemsEditor.create();
@@ -236,11 +241,9 @@ public:
             } else {
                 gSceneManager.getCurrentLevel().Update(dt);
             }
-            UpdateCamera(dt);
 
             imGuiManager.render();
-
-            auto aspectRatio = getAspectRatio();
+#endif
             float fov = 80;
 
 #ifdef PIVOT_CULLING_DEBUG

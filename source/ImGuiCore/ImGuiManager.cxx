@@ -3,17 +3,21 @@
 
 extern SceneManager gSceneManager;
 
+static std::vector<ImTextureID> updateImages(pivot::graphics::VulkanApplication &app)
+{
+    std::vector<ImTextureID> text;
+    for (auto &imageView: app.getViewportSwapchain().getSwapchainImageViews()) {
+        text.push_back(
+            ImGui_ImplVulkan_AddTexture(app.getViewportSampler(), imageView, VK_IMAGE_LAYOUT_SHADER_READ_ONLY_OPTIMAL));
+    }
+    return text;
+}
 ImGuiManager::ImGuiManager(pivot::graphics::VulkanApplication &app): app(app) {}
 
-void ImGuiManager::init()
-{
-    for (auto [image, imageView, _]: app.get().getViewportSwapchain().getImages()) {
-        text.push_back(ImGui_ImplVulkan_AddTexture(app.get().getViewportSampler(), imageView,
-                                                   VK_IMAGE_LAYOUT_SHADER_READ_ONLY_OPTIMAL));
-    }
-}
+void ImGuiManager::init() {}
 void ImGuiManager::newFrame()
 {
+    if (text.empty()) text = updateImages(app.get());
     ImGui_ImplVulkan_NewFrame();
     ImGui_ImplGlfw_NewFrame();
     ImGui::NewFrame();
@@ -31,6 +35,7 @@ void ImGuiManager::newFrame()
             });
             text.clear();
             init();
+            text = updateImages(app.get());
             bIsResizing = false;
         }
         ImGui::Image(text.at(app.get().getCurrentFrame()), viewportSize);

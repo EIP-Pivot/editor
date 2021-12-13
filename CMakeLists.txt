@@ -29,16 +29,14 @@ if (LOCAL_PIVOT_DIRECTORY STREQUAL "")
         message(STATUS "Populating pivot")
         FetchContent_Populate(pivot)
         add_subdirectory(${pivot_SOURCE_DIR} ${pivot_BINARY_DIR})
-        target_compile_definitions(pivot-ecs PUBLIC
-            PIVOT_MAX_PROJECTION_LIMIT=1000000.0f
-        )
     endif()
 else()
     add_subdirectory(${LOCAL_PIVOT_DIRECTORY} ${CMAKE_BINARY_DIR}/game-engine)
-    target_compile_definitions(pivot-ecs PUBLIC
-        PIVOT_MAX_PROJECTION_LIMIT=1000000.0f
-    )
 endif()
+
+target_compile_definitions(pivot-graphics PUBLIC
+    PIVOT_MAX_PROJECTION_LIMIT=1000000.0f
+)
 
 add_executable(${PROJECT_NAME} source/main.cxx
                                source/Systems/PhysicsSystem.cxx
