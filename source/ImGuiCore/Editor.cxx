@@ -1,6 +1,8 @@
 #include "ImGuiCore/Editor.hxx"
+
 #include <glm/gtc/type_ptr.hpp>
 #include <misc/cpp/imgui_stdlib.h>
+#include <pivot/graphics/VulkanApplication.hxx>
 
 extern SceneManager gSceneManager;
 
@@ -49,12 +51,13 @@ void Editor::create()
         } else {
             currentGizmoMode = ImGuizmo::LOCAL;
         }
-        ImGui::Checkbox("", &useSnap);
+        ImGui::Checkbox("##", &useSnap);
         ImGui::SameLine();
         switch (currentGizmoOperation) {
             case ImGuizmo::TRANSLATE: ImGui::InputFloat3("Snap", &snap[0]); break;
             case ImGuizmo::ROTATE: ImGui::InputFloat("Angle Snap", &snap[0]); break;
             case ImGuizmo::SCALE: ImGui::InputFloat("Scale Snap", &snap[0]); break;
+            default: break;
         }
         ImGui::Separator();
     }
@@ -94,16 +97,18 @@ void Editor::DisplayGuizmo(Entity entity)
 {
     const auto view = camera.getView();
     const auto projection = camera.getProjection(80.9f, aspectRatio);
+    auto &transform = gSceneManager.getCurrentLevel().GetComponent<RenderObject>(entity).objectInformation.transform;
+    auto matrix = transform.getModelMatrix();
 
     const float *view_ptr = glm::value_ptr(view);
     const float *projection_ptr = glm::value_ptr(projection);
-    float *matrix = glm::value_ptr(gSceneManager.getCurrentLevel()
-                                       .GetComponent<RenderObject>(entity)
-                                       .objectInformation.transform.getModelMatrix());
+    float *matrix_ptr = glm::value_ptr(matrix);
+
     ImGuiIO &io = ImGui::GetIO();
     ImGuizmo::SetRect(0, 0, io.DisplaySize.x, io.DisplaySize.y);
-    ImGuizmo::Manipulate(view_ptr, projection_ptr, currentGizmoOperation, currentGizmoMode, matrix, NULL,
+    ImGuizmo::Manipulate(view_ptr, projection_ptr, currentGizmoOperation, currentGizmoMode, matrix_ptr, NULL,
                          useSnap ? &snap[0] : NULL);
+    transform.setModelMatrix(matrix);
 }
 
 void Editor::createPopUp()

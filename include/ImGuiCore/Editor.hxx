@@ -5,7 +5,7 @@
 #include <ImGuizmo.h>
 
 #include <pivot/ecs/Core/SceneManager.hxx>
-#include <pivot/graphics/config.hxx>
+#include <pivot/graphics/types/common.hxx>
 
 class Editor
 {

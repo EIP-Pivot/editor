@@ -97,6 +97,7 @@ public:
     void loadScene()
     {
         LevelId defaultScene = editor.addScene("Default");
+        //addRandomObject("sponza");
         DemoScene();
         gSceneManager.setCurrentLevelId(defaultScene);
     }
@@ -106,7 +107,7 @@ public:
         gSceneManager.Init();
         loadScene();
 
-        window.captureCursor(true);
+        window.captureCursor(false);
         window.setKeyReleaseCallback(Window::Key::LEFT_ALT, [&](Window &window, const Window::Key key) {
             window.captureCursor(!window.captureCursor());
             bFirstMouse = window.captureCursor();
@@ -150,16 +151,20 @@ public:
                 last = pos;
                 bFirstMouse = false;
             }
-            auto xoffset = pos.x - last.x;
-            auto yoffset = last.y - pos.y;
+            const auto xoffset = pos.x - last.x;
+            const auto yoffset = last.y - pos.y;
 
             last = pos;
             ControlSystem::processMouseMovement(camera, glm::dvec2(xoffset, yoffset));
         });
-        load3DModels({"../assets/plane.obj", "../assets/cube.obj"});
-        loadTextures({"../assets/rouge.png", "../assets/vert.png", "../assets/bleu.png", "../assets/cyan.png",
-                      "../assets/orange.png", "../assets/jaune.png", "../assets/blanc.png", "../assets/violet.png"});
+        const auto loadedModels = assetStorage.loadModels("../assets/plane.obj", "../assets/cube.obj"); //, "../assets/sponza.obj");
+        assert(loadedModels == 2);
+        const auto loadedTextures = assetStorage.loadTextures(
+            "../assets/rouge.png", "../assets/vert.png", "../assets/bleu.png", "../assets/cyan.png",
+            "../assets/orange.png", "../assets/jaune.png", "../assets/blanc.png", "../assets/violet.png");
+        assert(loadedTextures == 8);
     }
+
     void processKeyboard(const Camera::Movement direction, float dt) noexcept
     {
         switch (direction) {
