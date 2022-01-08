@@ -97,7 +97,7 @@ void ComponentEditor::createComponent(RenderObject &renderObject)
         renderObject.objectInformation.transform.setScale(matrixScale);
     if (ImGui::Selectable(gSceneManager.getCurrentLevel()
                               .GetComponent<RenderObject>(currentEntity)
-                              .objectInformation.textureIndex.c_str(),
+                              .objectInformation.textureIndex.value().c_str(),
                           false, 0, ImVec2(50, 15)))
         ImGui::OpenPopup("Textures");
     if (ImGui::Selectable(gSceneManager.getCurrentLevel().GetComponent<RenderObject>(currentEntity).meshID.c_str(),

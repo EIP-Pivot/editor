@@ -97,7 +97,14 @@ public:
     void loadScene()
     {
         LevelId defaultScene = editor.addScene("Default");
-        //addRandomObject("sponza");
+        auto e = entity.addEntity();
+        componentEditor.addComponent<RenderObject>(e, {
+                                                          .meshID = "sponza",
+                                                          .objectInformation =
+                                                              {
+                                                                  .transform = Transform({}, {}, glm::vec3(1)),
+                                                              },
+                                                      });
         DemoScene();
         gSceneManager.setCurrentLevelId(defaultScene);
     }
@@ -157,8 +164,9 @@ public:
             last = pos;
             ControlSystem::processMouseMovement(camera, glm::dvec2(xoffset, yoffset));
         });
-        const auto loadedModels = assetStorage.loadModels("../assets/plane.obj", "../assets/cube.obj"); //, "../assets/sponza.obj");
-        assert(loadedModels == 2);
+        const auto loadedModels =
+            assetStorage.loadModels("../assets/plane.obj", "../assets/cube.obj", "../assets/sponza/sponza.obj");
+        assert(loadedModels == 3);
         const auto loadedTextures = assetStorage.loadTextures(
             "../assets/rouge.png", "../assets/vert.png", "../assets/bleu.png", "../assets/cyan.png",
             "../assets/orange.png", "../assets/jaune.png", "../assets/blanc.png", "../assets/violet.png");
