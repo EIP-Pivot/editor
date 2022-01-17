@@ -37,11 +37,14 @@ Signature PhysicsSystem::getSignature()
     return signature;
 }
 
-void physicsSystem(std::vector<std::any> components)
+void physicsSystem(std::vector<std::vector<std::any>> entities)
 {
-    std::cout << "I'm a system with components:\n";
-    for (const auto &component: components) std::cout << "\t" << component.type().name() << "\n";
-    auto tag = std::any_cast<std::reference_wrapper<Tag>>(components[1]);
-    std::cout << tag.get().name << std::endl;
-    tag.get().name = "oui";
+    for (const auto &entity: entities) {
+        auto gravity = std::any_cast<std::reference_wrapper<Gravity>>(entity[0]);
+        auto rigidBody = std::any_cast<std::reference_wrapper<RigidBody>>(entity[1]);
+        rigidBody.get().velocity += gravity.get().force * 0.16f;
+    }
+    // for (const auto &component: components) std::cout << "\t" << component.type().name() << "\n";
+    // auto gravity = std::any_cast<std::reference_wrapper<Gravity>>(components[0]);
+    // auto rigidBody = std::any_cast<std::reference_wrapper<RigidBody>>(components[1]);
 }
