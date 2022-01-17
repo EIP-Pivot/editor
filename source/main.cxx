@@ -15,6 +15,9 @@
 #include <pivot/ecs/Systems/ControlSystem.hxx>
 #include <pivot/ecs/ecs.hxx>
 
+#include <pivot/ecs/Core/Systems/index.hxx>
+#include <pivot/ecs/Core/Systems/description.hxx>
+
 #include <Logger.hpp>
 
 // #include "Scene.hxx"
@@ -41,69 +44,79 @@ class Application : public VulkanApplication
 public:
     Application(): VulkanApplication(), editor(Editor()), camera(editor.getCamera()){};
 
-    void addRandomObject(std::string object)
-    {
-        std::array<std::string, 8> textures = {"rouge", "vert", "bleu", "cyan", "orange", "jaune", "blanc", "violet"};
-        std::random_device generator;
-        std::uniform_real_distribution<float> randPositionY(0.0f, 50.0f);
-        std::uniform_real_distribution<float> randPositionXZ(-50.0f, 50.0f);
-        std::uniform_real_distribution<float> randRotation(0.0f, 3.0f);
-        std::uniform_real_distribution<float> randColor(0.0f, 1.0f);
-        std::uniform_real_distribution<float> randGravity(-10.0f, -1.0f);
-        std::uniform_real_distribution<float> randVelocityY(10.0f, 200.0f);
-        std::uniform_real_distribution<float> randVelocityXZ(-200.0f, 200.0f);
-        std::uniform_real_distribution<float> randScale(0.5f, 1.0f);
-        std::uniform_int_distribution<int> randTexture(0, textures.size() - 1);
-        auto newEntity = entity.addEntity();
-        if (newEntity == 1997)
-            gSceneManager.getCurrentLevel().GetComponent<Tag>(newEntity).name =
-                "Best Entity = " + std::to_string(newEntity);
-        else
-            gSceneManager.getCurrentLevel().GetComponent<Tag>(newEntity).name = "Entity " + std::to_string(newEntity);
-        componentEditor.addComponent<Gravity>(newEntity, {
-                                                             .force = glm::vec3(0.0f, randGravity(generator), 0.0f),
-                                                         });
-        componentEditor.addComponent<RigidBody>(
-            newEntity,
-            {
-                .velocity = glm::vec3(randVelocityXZ(generator), randVelocityY(generator), randVelocityXZ(generator)),
-                .acceleration = glm::vec3(0.0f, 0.0f, 0.0f),
-            });
-        glm::vec3 position = glm::vec3(randPositionXZ(generator), randPositionY(generator), randPositionXZ(generator));
-        glm::vec3 rotation = glm::vec3(randRotation(generator), randRotation(generator), randRotation(generator));
-        glm::vec3 scale = glm::vec3(randScale(generator));
-        componentEditor.addComponent<RenderObject>(newEntity,
-                                                   {
-                                                       .meshID = object,
-                                                       .objectInformation =
-                                                           {
-                                                               .transform = Transform(position, rotation, scale),
-                                                               .textureIndex = textures[randTexture(generator)],
-                                                               .materialIndex = "white",
-                                                           },
-                                                   });
-    }
+    // void addRandomObject(std::string object)
+    // {
+    //     std::array<std::string, 8> textures = {"rouge", "vert", "bleu", "cyan", "orange", "jaune", "blanc", "violet"};
+    //     std::random_device generator;
+    //     std::uniform_real_distribution<float> randPositionY(0.0f, 50.0f);
+    //     std::uniform_real_distribution<float> randPositionXZ(-50.0f, 50.0f);
+    //     std::uniform_real_distribution<float> randRotation(0.0f, 3.0f);
+    //     std::uniform_real_distribution<float> randColor(0.0f, 1.0f);
+    //     std::uniform_real_distribution<float> randGravity(-10.0f, -1.0f);
+    //     std::uniform_real_distribution<float> randVelocityY(10.0f, 200.0f);
+    //     std::uniform_real_distribution<float> randVelocityXZ(-200.0f, 200.0f);
+    //     std::uniform_real_distribution<float> randScale(0.5f, 1.0f);
+    //     std::uniform_int_distribution<int> randTexture(0, textures.size() - 1);
+    //     auto newEntity = entity.addEntity();
+    //     if (newEntity == 1997)
+    //         gSceneManager.getCurrentLevel().GetComponent<Tag>(newEntity).name =
+    //             "Best Entity = " + std::to_string(newEntity);
+    //     else
+    //         gSceneManager.getCurrentLevel().GetComponent<Tag>(newEntity).name = "Entity " + std::to_string(newEntity);
+    //     componentEditor.addComponent<Gravity>(newEntity, {
+    //                                                          .force = glm::vec3(0.0f, randGravity(generator), 0.0f),
+    //                                                      });
+    //     componentEditor.addComponent<RigidBody>(
+    //         newEntity,
+    //         {
+    //             .velocity = glm::vec3(randVelocityXZ(generator), randVelocityY(generator), randVelocityXZ(generator)),
+    //             .acceleration = glm::vec3(0.0f, 0.0f, 0.0f),
+    //         });
+    //     glm::vec3 position = glm::vec3(randPositionXZ(generator), randPositionY(generator), randPositionXZ(generator));
+    //     glm::vec3 rotation = glm::vec3(randRotation(generator), randRotation(generator), randRotation(generator));
+    //     glm::vec3 scale = glm::vec3(randScale(generator));
+    //     componentEditor.addComponent<RenderObject>(newEntity,
+    //                                                {
+    //                                                    .meshID = object,
+    //                                                    .objectInformation =
+    //                                                        {
+    //                                                            .transform = Transform(position, rotation, scale),
+    //                                                            .textureIndex = textures[randTexture(generator)],
+    //                                                            .materialIndex = "white",
+    //                                                        },
+    //                                                });
+    // }
 
-    void DemoScene()
-    {
-        editor.addScene("Demo");
-        systemsEditor.addSystem<PhysicsSystem>();
+    // void DemoScene()
+    // {
+    //     editor.addScene("Demo");
+    //     systemsEditor.addSystem<PhysicsSystem>();
 
-        std::vector<Entity> entities(MAX_OBJECT - 1);
+    //     std::vector<Entity> entities(MAX_OBJECT - 1);
 
-        for (auto &_entity: entities) { addRandomObject("cube"); }
-    }
+    //     for (auto &_entity: entities) { addRandomObject("cube"); }
+    // }
 
     void loadScene()
     {
         LevelId defaultScene = editor.addScene("Default");
-        DemoScene();
+        // DemoScene();
         gSceneManager.setCurrentLevelId(defaultScene);
     }
 
     void init()
     {
-        gSceneManager.Init();
+        pivot::ecs::systems::Description description{
+            .name = "Physics System",
+            .arguments =
+                {
+                    "Gravity",
+                    "RigidBody",
+                },
+            .system = &physicsSystem,
+        };
+        pivot::ecs::systems::GlobalIndex::getSingleton().registerSystem(description);
+        
         loadScene();
 
         window.captureCursor(true);
@@ -230,10 +243,10 @@ public:
                 entity.hasSelected() ? componentEditor.create(entity.getEntitySelected()) : componentEditor.create();
                 systemsEditor.create();
 
-                if (entity.hasSelected() &&
-                    gSceneManager.getCurrentLevel().hasComponent<RenderObject>(entity.getEntitySelected())) {
-                    editor.DisplayGuizmo(entity.getEntitySelected());
-                }
+                // if (entity.hasSelected() &&
+                //     gSceneManager.getCurrentLevel().hasComponent<RenderObject>(entity.getEntitySelected())) {
+                //     editor.DisplayGuizmo(entity.getEntitySelected());
+                // }
             } else {
                 gSceneManager.getCurrentLevel().Update(dt);
             }

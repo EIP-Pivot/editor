@@ -72,7 +72,7 @@ LevelId Editor::addScene()
 {
     LevelId newScene = gSceneManager.registerLevel();
     gSceneManager.setCurrentLevelId(newScene);
-    gSceneManager.getCurrentLevel().Init();
+    // gSceneManager.getCurrentLevel().Init();
     return newScene;
 }
 
@@ -80,7 +80,7 @@ LevelId Editor::addScene(std::string name)
 {
     LevelId newScene = gSceneManager.registerLevel(name);
     gSceneManager.setCurrentLevelId(newScene);
-    gSceneManager.getCurrentLevel().Init();
+    // gSceneManager.getCurrentLevel().Init();
     return newScene;
 }
 

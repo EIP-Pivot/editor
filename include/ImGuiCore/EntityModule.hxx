@@ -6,6 +6,9 @@
 
 #include <pivot/ecs/Core/types.hxx>
 
+#include <pivot/ecs/Core/Component/manager.hxx>
+#include <pivot/ecs/Core/Component/index.hxx>
+
 class EntityModule
 {
 public:

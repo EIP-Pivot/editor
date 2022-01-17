@@ -1,4 +1,6 @@
 #include "ImGuiCore/ComponentEditor.hxx"
+#include "ImGuiCore/TypeTemplate/Template.hxx"
+#include <magic_enum.hpp>
 #include <misc/cpp/imgui_stdlib.h>
 
 void ComponentEditor::create(Entity entity)
@@ -6,10 +8,7 @@ void ComponentEditor::create(Entity entity)
     currentEntity = entity;
     ImGui::Begin("Component editor");
     createPopUp();
-    ImGui::InputText("Name", &gSceneManager.getCurrentLevel().getEntityName(currentEntity));
-    displayComponent<RigidBody>("Rigid body");
-    displayComponent<Gravity>("Gravity");
-    displayComponent<RenderObject>("Render Object");
+    displayComponent();
     if (ImGui::Button("Add Component")) { ImGui::OpenPopup("AddComponent"); }
     ImGui::End();
 }
@@ -29,99 +28,44 @@ ObjectVector ComponentEditor::getObject() { return sceneObject[gSceneManager.get
 
 void ComponentEditor::createPopUp()
 {
+    auto &cm = gSceneManager.getCurrentLevel().getComponentManager();
     if (ImGui::BeginPopup("AddComponent")) {
-        if (!gSceneManager.getCurrentLevel().hasComponent<RigidBody>(currentEntity)) {
-            if (ImGui::MenuItem("Rigid Body")) { addComponent<RigidBody>(RigidBody()); }
-        }
-        if (!gSceneManager.getCurrentLevel().hasComponent<Gravity>(currentEntity)) {
-            if (ImGui::MenuItem("Gravity")) { addComponent<Gravity>(Gravity()); }
-        }
-        if (!gSceneManager.getCurrentLevel().hasComponent<RenderObject>(currentEntity)) {
-            if (ImGui::MenuItem("Render object")) {
-                addComponent<RenderObject>({
-                    .meshID = "cube",
-                    .objectInformation =
-                        {
-                            .transform = Transform(glm::vec3(), glm::vec3(), glm::vec3(1.0f)),
-                            .textureIndex = "blanc",
-                            .materialIndex = "white",
-                        },
-                });
-            }
-        }
-        ImGui::EndPopup();
-    }
-    if (ImGui::BeginPopup("Textures")) {
-        for (std::string texture: textures) {
-            if (ImGui::MenuItem(texture.c_str())) {
-                gSceneManager.getCurrentLevel()
-                    .GetComponent<RenderObject>(currentEntity)
-                    .objectInformation.textureIndex = texture;
-            }
-        }
-        ImGui::EndPopup();
-    }
-    if (ImGui::BeginPopup("Models")) {
-        for (std::string model: models) {
-            if (ImGui::MenuItem(model.c_str())) {
-                gSceneManager.getCurrentLevel().GetComponent<RenderObject>(currentEntity).meshID = model;
+        for (const auto &[name, description]: GlobalIndex::getSingleton()) {
+            if (cm.GetComponent(currentEntity, cm.GetComponentId(name).value()) == std::nullopt) {
+                if (ImGui::MenuItem(name.c_str())) { addComponent(description); }
             }
         }
         ImGui::EndPopup();
     }
 }
 
-void ComponentEditor::createComponent(RigidBody &rigidBody)
+void ComponentEditor::displayComponent()
 {
-    ImGui::Indent();
-    ImGui::InputFloat3("Acceleration", glm::value_ptr(rigidBody.acceleration));
-    ImGui::InputFloat3("Velocity", glm::value_ptr(rigidBody.velocity));
-    ImGui::Unindent();
+    auto &cm = gSceneManager.getCurrentLevel().getComponentManager();
+    for (const auto &[description, component]: cm.GetAllComponents(currentEntity)) {
+        if (ImGui::TreeNode(description.name.c_str())) {
+            ImGui::TreePop();
+            ImGui::Indent();
+            for (const auto &property: description.properties) {
+                std::visit([property](auto &&arg) { draw(arg, property.name); },
+                           description.getProperty(component, property.name));
+            }
+            ImGui::Unindent();
+        }
+    }
 }
 
-void ComponentEditor::createComponent(Gravity &gravity)
+void ComponentEditor::addComponent(const Description &description)
 {
-    ImGui::Indent();
-    ImGui::InputFloat3("Force", glm::value_ptr(gravity.force));
-    ImGui::Unindent();
-}
-
-void ComponentEditor::createComponent(RenderObject &renderObject)
-{
-    ImGui::Indent();
-    if (ImGui::InputFloat3("Tr", glm::value_ptr(matrixTranslation)))
-        renderObject.objectInformation.transform.setPosition(matrixTranslation);
-    if (ImGui::InputFloat3("Rt", glm::value_ptr(matrixRotation)))
-        renderObject.objectInformation.transform.setRotation(matrixRotation);
-    if (ImGui::InputFloat3("Sc", glm::value_ptr(matrixScale)))
-        renderObject.objectInformation.transform.setScale(matrixScale);
-    if (ImGui::Selectable(gSceneManager.getCurrentLevel()
-                              .GetComponent<RenderObject>(currentEntity)
-                              .objectInformation.textureIndex.c_str(),
-                          false, 0, ImVec2(50, 15)))
-        ImGui::OpenPopup("Textures");
-    if (ImGui::Selectable(gSceneManager.getCurrentLevel().GetComponent<RenderObject>(currentEntity).meshID.c_str(),
-                          false, 0, ImVec2(50, 15)))
-        ImGui::OpenPopup("Models");
-    ImGui::Unindent();
-}
-
-template <>
-void ComponentEditor::addComponent(RenderObject renderObject)
-{
-    if (!gSceneManager.getCurrentLevel().isRegister<RenderObject>())
-        gSceneManager.getCurrentLevel().RegisterComponent<RenderObject>();
-    gSceneManager.getCurrentLevel().AddComponent<RenderObject>(currentEntity, renderObject);
-    sceneObject[gSceneManager.getCurrentLevelId()].push_back(
-        gSceneManager.getCurrentLevel().GetComponent<RenderObject>(currentEntity));
-}
-
-template <>
-void ComponentEditor::addComponent(Entity entity, RenderObject renderObject)
-{
-    if (!gSceneManager.getCurrentLevel().isRegister<RenderObject>())
-        gSceneManager.getCurrentLevel().RegisterComponent<RenderObject>();
-    gSceneManager.getCurrentLevel().AddComponent<RenderObject>(entity, renderObject);
-    sceneObject[gSceneManager.getCurrentLevelId()].push_back(
-        gSceneManager.getCurrentLevel().GetComponent<RenderObject>(entity));
+    auto &cm = gSceneManager.getCurrentLevel().getComponentManager();
+    auto id = cm.GetComponentId(description.name).value();
+    std::map<std::string, Description::Property::ValueType> properties;
+    for (const auto &property: description.properties) {
+        switch (property.type) {
+            case Description::Property::Type::String: properties.insert({property.name, std::string("")}); break;
+            case Description::Property::Type::Vec3: properties.insert({property.name, glm::vec3(0.0f)}); break;
+            case Description::Property::Type::Number: properties.insert({property.name, 0}); break;
+        }
+    }
+    cm.AddComponent(currentEntity, description.create(properties), id);
 }

@@ -36,3 +36,12 @@ Signature PhysicsSystem::getSignature()
     signature.set(gSceneManager.getCurrentLevel().GetComponentType<RenderObject>());
     return signature;
 }
+
+void physicsSystem(std::vector<std::any> components)
+{
+    std::cout << "I'm a system with components:\n";
+    for (const auto &component: components) std::cout << "\t" << component.type().name() << "\n";
+    auto tag = std::any_cast<std::reference_wrapper<Tag>>(components[1]);
+    std::cout << tag.get().name << std::endl;
+    tag.get().name = "oui";
+}
