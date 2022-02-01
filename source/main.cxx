@@ -18,6 +18,9 @@
 #include <pivot/ecs/Core/Systems/index.hxx>
 #include <pivot/ecs/Core/Systems/description.hxx>
 
+#include <pivot/ecs/Core/Event/index.hxx>
+#include <pivot/ecs/Core/Event/description.hxx>
+
 #include <Logger.hpp>
 
 // #include "Scene.hxx"
@@ -37,82 +40,35 @@
 
 #include "FrameLimiter.hpp"
 
-Logger *logger = nullptr;
-
-class Application : public VulkanApplication
+class Application : public pivot::graphics::VulkanApplication
 {
 public:
     Application(): VulkanApplication(), editor(Editor()), camera(editor.getCamera()){};
 
-    // void addRandomObject(std::string object)
-    // {
-    //     std::array<std::string, 8> textures = {"rouge", "vert", "bleu", "cyan", "orange", "jaune", "blanc", "violet"};
-    //     std::random_device generator;
-    //     std::uniform_real_distribution<float> randPositionY(0.0f, 50.0f);
-    //     std::uniform_real_distribution<float> randPositionXZ(-50.0f, 50.0f);
-    //     std::uniform_real_distribution<float> randRotation(0.0f, 3.0f);
-    //     std::uniform_real_distribution<float> randColor(0.0f, 1.0f);
-    //     std::uniform_real_distribution<float> randGravity(-10.0f, -1.0f);
-    //     std::uniform_real_distribution<float> randVelocityY(10.0f, 200.0f);
-    //     std::uniform_real_distribution<float> randVelocityXZ(-200.0f, 200.0f);
-    //     std::uniform_real_distribution<float> randScale(0.5f, 1.0f);
-    //     std::uniform_int_distribution<int> randTexture(0, textures.size() - 1);
-    //     auto newEntity = entity.addEntity();
-    //     if (newEntity == 1997)
-    //         gSceneManager.getCurrentLevel().GetComponent<Tag>(newEntity).name =
-    //             "Best Entity = " + std::to_string(newEntity);
-    //     else
-    //         gSceneManager.getCurrentLevel().GetComponent<Tag>(newEntity).name = "Entity " + std::to_string(newEntity);
-    //     componentEditor.addComponent<Gravity>(newEntity, {
-    //                                                          .force = glm::vec3(0.0f, randGravity(generator), 0.0f),
-    //                                                      });
-    //     componentEditor.addComponent<RigidBody>(
-    //         newEntity,
-    //         {
-    //             .velocity = glm::vec3(randVelocityXZ(generator), randVelocityY(generator), randVelocityXZ(generator)),
-    //             .acceleration = glm::vec3(0.0f, 0.0f, 0.0f),
-    //         });
-    //     glm::vec3 position = glm::vec3(randPositionXZ(generator), randPositionY(generator), randPositionXZ(generator));
-    //     glm::vec3 rotation = glm::vec3(randRotation(generator), randRotation(generator), randRotation(generator));
-    //     glm::vec3 scale = glm::vec3(randScale(generator));
-    //     componentEditor.addComponent<RenderObject>(newEntity,
-    //                                                {
-    //                                                    .meshID = object,
-    //                                                    .objectInformation =
-    //                                                        {
-    //                                                            .transform = Transform(position, rotation, scale),
-    //                                                            .textureIndex = textures[randTexture(generator)],
-    //                                                            .materialIndex = "white",
-    //                                                        },
-    //                                                });
-    // }
-
-    // void DemoScene()
-    // {
-    //     editor.addScene("Demo");
-    //     systemsEditor.addSystem<PhysicsSystem>();
-
-    //     std::vector<Entity> entities(MAX_OBJECT - 1);
-
-    //     for (auto &_entity: entities) { addRandomObject("cube"); }
-    // }
-
+    
     void loadScene()
     {
         LevelId defaultScene = editor.addScene("Default");
-        // DemoScene();
         gSceneManager.setCurrentLevelId(defaultScene);
     }
 
     void init()
     {
+        event::Description tick {
+            .name = "Tick",
+            .entities = {},
+            .payload = pivot::ecs::data::BasicType::Number,
+        };
+        pivot::ecs::event::GlobalIndex::getSingleton().registerEvent(tick);
+
         pivot::ecs::systems::Description description{
             .name = "Physics System",
-            .arguments =
+            .systemComponents =
                 {
                     "Gravity",
                     "RigidBody",
                 },
+            .eventListener = tick,
             .system = &physicsSystem,
         };
         pivot::ecs::systems::GlobalIndex::getSingleton().registerSystem(description);
@@ -169,9 +125,9 @@ public:
             last = pos;
             ControlSystem::processMouseMovement(camera, glm::dvec2(xoffset, yoffset));
         });
-        load3DModels({"../assets/plane.obj", "../assets/cube.obj"});
-        loadTextures({"../assets/rouge.png", "../assets/vert.png", "../assets/bleu.png", "../assets/cyan.png",
-                      "../assets/orange.png", "../assets/jaune.png", "../assets/blanc.png", "../assets/violet.png"});
+        assetStorage.loadModels("../assets/plane.obj", "../assets/cube.obj");
+        assetStorage.loadTextures("../assets/rouge.png", "../assets/vert.png", "../assets/bleu.png", "../assets/cyan.png",
+                      "../assets/orange.png", "../assets/jaune.png", "../assets/blanc.png", "../assets/violet.png");
     }
     void processKeyboard(const Camera::Movement direction, float dt) noexcept
     {
@@ -248,7 +204,7 @@ public:
                 //     editor.DisplayGuizmo(entity.getEntitySelected());
                 // }
             } else {
-                gSceneManager.getCurrentLevel().Update(dt);
+                gSceneManager.getCurrentLevel().getEventManager().sendEvent("Tick", data::Value(dt));
             }
             UpdateCamera(dt);
 
@@ -288,15 +244,11 @@ public:
 
 int main()
 try {
-    logger = new Logger(std::cout);
-    logger->start();
-
     Application app;
     app.init();
     app.run();
     return 0;
 } catch (std::exception &e) {
-    logger->err("THROW") << e.what();
-    LOGGER_ENDL;
+    logger.err("THROW") << e.what();
     return 1;
 }

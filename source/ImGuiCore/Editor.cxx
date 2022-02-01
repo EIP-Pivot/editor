@@ -49,7 +49,7 @@ void Editor::create()
         } else {
             currentGizmoMode = ImGuizmo::LOCAL;
         }
-        ImGui::Checkbox("", &useSnap);
+        ImGui::Checkbox("##", &useSnap);
         ImGui::SameLine();
         switch (currentGizmoOperation) {
             case ImGuizmo::TRANSLATE: ImGui::InputFloat3("Snap", &snap[0]); break;
@@ -92,18 +92,18 @@ void Editor::setAspectRatio(float aspect) { aspectRatio = aspect; }
 
 void Editor::DisplayGuizmo(Entity entity)
 {
-    const auto view = camera.getView();
-    const auto projection = camera.getProjection(80.9f, aspectRatio);
+    // const auto view = camera.getView();
+    // const auto projection = camera.getProjection(80.9f, aspectRatio);
 
-    const float *view_ptr = glm::value_ptr(view);
-    const float *projection_ptr = glm::value_ptr(projection);
-    float *matrix = glm::value_ptr(gSceneManager.getCurrentLevel()
-                                       .GetComponent<RenderObject>(entity)
-                                       .objectInformation.transform.getModelMatrix());
-    ImGuiIO &io = ImGui::GetIO();
-    ImGuizmo::SetRect(0, 0, io.DisplaySize.x, io.DisplaySize.y);
-    ImGuizmo::Manipulate(view_ptr, projection_ptr, currentGizmoOperation, currentGizmoMode, matrix, NULL,
-                         useSnap ? &snap[0] : NULL);
+    // const float *view_ptr = glm::value_ptr(view);
+    // const float *projection_ptr = glm::value_ptr(projection);
+    // float *matrix = glm::value_ptr(gSceneManager.getCurrentLevel()
+    //                                    .GetComponent<RenderObject>(entity)
+    //                                    .objectInformation.transform.getModelMatrix());
+    // ImGuiIO &io = ImGui::GetIO();
+    // ImGuizmo::SetRect(0, 0, io.DisplaySize.x, io.DisplaySize.y);
+    // ImGuizmo::Manipulate(view_ptr, projection_ptr, currentGizmoOperation, currentGizmoMode, matrix, NULL,
+    //                      useSnap ? &snap[0] : NULL);
 }
 
 void Editor::createPopUp()
@@ -111,7 +111,7 @@ void Editor::createPopUp()
     if (ImGui::BeginPopup("AddScene")) {
         static std::string sceneName;
         ImGui::SetKeyboardFocusHere();
-        if (ImGui::InputText("", &sceneName, ImGuiInputTextFlags_EnterReturnsTrue)) {
+        if (ImGui::InputText("##", &sceneName, ImGuiInputTextFlags_EnterReturnsTrue)) {
             if (sceneName.empty())
                 addScene();
             else

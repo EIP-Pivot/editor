@@ -16,7 +16,7 @@ void EntityModule::create()
     ImGui::Begin("Entity");
     createPopUp();
     for (auto const &[entity, _]: gSceneManager.getCurrentLevel().getEntities()) {
-        if (ImGui::Selectable(std::any_cast<Tag>(componentManager.GetComponent(entity, tagId).value()).name.c_str(),
+        if (ImGui::Selectable(std::get<std::string>(std::get<pivot::ecs::data::Record>(componentManager.GetComponent(entity, tagId).value()).at("name")).c_str(),
                               entitySelected == entity)) {
             _hasSelected = true;
             entitySelected = entity;
@@ -63,7 +63,7 @@ void EntityModule::createPopUp()
     if (ImGui::BeginPopup("NewEntity")) {
         static std::string entityName;
         ImGui::SetKeyboardFocusHere();
-        if (ImGui::InputText("", &entityName, ImGuiInputTextFlags_EnterReturnsTrue)) {
+        if (ImGui::InputText("##", &entityName, ImGuiInputTextFlags_EnterReturnsTrue)) {
             if (entityName.empty())
                 addEntity();
             else

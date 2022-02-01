@@ -1,5 +1,6 @@
 #include "ImGuiCore/ComponentEditor.hxx"
 #include "ImGuiCore/TypeTemplate/Template.hxx"
+#include "ImGuiCore/TypeTemplate/createValue.hxx"
 #include <magic_enum.hpp>
 #include <misc/cpp/imgui_stdlib.h>
 
@@ -42,14 +43,13 @@ void ComponentEditor::createPopUp()
 void ComponentEditor::displayComponent()
 {
     auto &cm = gSceneManager.getCurrentLevel().getComponentManager();
-    for (const auto &[description, component]: cm.GetAllComponents(currentEntity)) {
+    for (auto [description, component]: cm.GetAllComponents(currentEntity)) {
         if (ImGui::TreeNode(description.name.c_str())) {
             ImGui::TreePop();
             ImGui::Indent();
-            for (const auto &property: description.properties) {
-                std::visit([property](auto &&arg) { draw(arg, property.name); },
-                           description.getProperty(component, property.name));
-            }
+            std::visit([](auto &&arg) { 
+                draw(arg, "oui");
+                }, component);
             ImGui::Unindent();
         }
     }
@@ -59,13 +59,7 @@ void ComponentEditor::addComponent(const Description &description)
 {
     auto &cm = gSceneManager.getCurrentLevel().getComponentManager();
     auto id = cm.GetComponentId(description.name).value();
-    std::map<std::string, Description::Property::ValueType> properties;
-    for (const auto &property: description.properties) {
-        switch (property.type) {
-            case Description::Property::Type::String: properties.insert({property.name, std::string("")}); break;
-            case Description::Property::Type::Vec3: properties.insert({property.name, glm::vec3(0.0f)}); break;
-            case Description::Property::Type::Number: properties.insert({property.name, 0}); break;
-        }
-    }
-    cm.AddComponent(currentEntity, description.create(properties), id);
+    Value newComponent;
+    std::visit([&newComponent](auto &&arg) mutable { newComponent = createValue(arg); }, description.type);
+    cm.AddComponent(currentEntity, newComponent, id);
 }
