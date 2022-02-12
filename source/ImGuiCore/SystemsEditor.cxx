@@ -16,7 +16,7 @@ void SystemsEditor::createPopUp()
         for (const auto &[name, description]: GlobalIndex::getSingleton()) {
             auto used = sm.getSystemUsed();
             if (std::find(used.begin(), used.end(), name) == used.end())
-                if (ImGui::MenuItem("Physics system")) sm.useSystem(name);
+                if (ImGui::MenuItem(name.c_str())) sm.useSystem(name);
         }
         ImGui::EndPopup();
     }
