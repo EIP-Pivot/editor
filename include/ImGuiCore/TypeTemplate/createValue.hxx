@@ -12,7 +12,15 @@
 using namespace pivot::ecs::component;
 using namespace pivot::ecs::data;
 
-Value createValue(BasicType type)
+Value createValue(const BasicType &type);
+Value createValue(const RecordType &types);
+
+Value createValue(const Type &type)
+{
+    return std::visit([](auto &t) {return createValue(t);}, static_cast<const Type::variant &>(type));
+}
+
+Value createValue(const BasicType &type)
 {
     switch (type) {
         case BasicType::String: return Value{""};
@@ -21,17 +29,14 @@ Value createValue(BasicType type)
         case BasicType::Boolean: return Value{false};
         case BasicType::Vec3: return Value{glm::vec3(0.0f)};
     }
-    throw std::runtime_error("Ilegal BasicType value.");
+    throw std::runtime_error("Illegal BasicType value.");
 }
 
-Value createValue(RecordType types)
+Value createValue(const RecordType &types)
 {
-    Value value{Record{}};
-    for (auto &[name, type]: types)
-        std::visit(
-            [&value, &name](auto &&arg) mutable {
-                std::get<Record>(value).insert({name, createValue(arg)});
-            },
-            type);
-    return value;
+    Record record;
+    for (auto &[name, type]: types) {
+        record.insert({name, createValue(type)});
+    }
+    return {record};
 }

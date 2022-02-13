@@ -47,9 +47,7 @@ void ComponentEditor::displayComponent()
         if (ImGui::TreeNode(description.name.c_str())) {
             ImGui::TreePop();
             ImGui::Indent();
-            std::visit([](auto &&arg) { 
-                draw(arg, "oui");
-                }, component);
+            draw(component, "oui");
             ImGui::Unindent();
         }
     }
@@ -59,7 +57,6 @@ void ComponentEditor::addComponent(const Description &description)
 {
     auto &cm = gSceneManager.getCurrentLevel().getComponentManager();
     auto id = cm.GetComponentId(description.name).value();
-    Value newComponent;
-    std::visit([&newComponent](auto &&arg) mutable { newComponent = createValue(arg); }, description.type);
+    Value newComponent = createValue(description.type);
     cm.AddComponent(currentEntity, newComponent, id);
 }
