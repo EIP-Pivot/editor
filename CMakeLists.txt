@@ -47,8 +47,9 @@ add_executable(${PROJECT_NAME} source/main.cxx
                                source/ImGuiCore/EntityModule.cxx
                                source/ImGuiCore/ComponentEditor.cxx
                                source/ImGuiCore/SystemsEditor.cxx
+                               lib/ImGuiFileDialog/ImGuiFileDialog.cpp
 )
 
-target_include_directories(${PROJECT_NAME} PRIVATE include/)
+target_include_directories(${PROJECT_NAME} PRIVATE include/ PRIVATE lib/)
 
 target_link_libraries(${PROJECT_NAME} PRIVATE pivot-ecs pivot-graphics)
