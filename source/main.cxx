@@ -27,6 +27,7 @@
 #include "Systems/PhysicsSystem.hxx"
 #include <pivot/ecs/Core/Scene.hxx>
 #include <pivot/ecs/Core/SceneManager.hxx>
+#include <pivot/ecs/Core/Scripting/ScriptEngine.hxx>
 
 #include <glm/gtc/quaternion.hpp>
 #include <glm/gtc/type_ptr.hpp>
@@ -54,6 +55,7 @@ public:
 
     void init()
     {
+        loadResult = _engine.loadFile("../scripts/components.pvt", true);
         event::Description tick {
             .name = "Tick",
             .entities = {},
@@ -67,6 +69,7 @@ public:
                 {
                     "Gravity",
                     "RigidBody",
+                    "Najo",
                 },
             .eventListener = tick,
             .system = &physicsSystem,
@@ -192,6 +195,9 @@ public:
 
             imGuiManager.newFrame();
 
+            ImGui::Begin("Message");
+            ImGui::Text("- %s", loadResult.output.c_str());
+            ImGui::End();
             editor.create();
             if (!editor.getRun()) {
                 editor.setAspectRatio(getAspectRatio());
@@ -229,6 +235,8 @@ public:
     }
 
 public:
+    pivot::ecs::script::ScriptEngine _engine;
+    pivot::ecs::script::LoadResult loadResult;
     ImGuiManager imGuiManager;
     Editor editor;
     EntityModule entity;

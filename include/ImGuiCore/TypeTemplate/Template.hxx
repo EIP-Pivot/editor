@@ -29,6 +29,7 @@ void draw(bool &value, std::string name)
 
 void draw(double &value, std::string name)
 {
+    ImGui::InputDouble(name.c_str(), &value);
     // ImGui::InputText("Name", &value);
 }
 

@@ -44,10 +44,14 @@ void ComponentEditor::displayComponent()
 {
     auto &cm = gSceneManager.getCurrentLevel().getComponentManager();
     for (auto [description, component]: cm.GetAllComponents(currentEntity)) {
+        auto id = cm.GetComponentId(description.name).value();
+        auto &compArray = cm.GetComponentArray(id).value().get();
+        ComponentRef compRef(compArray, currentEntity);
         if (ImGui::TreeNode(description.name.c_str())) {
             ImGui::TreePop();
             ImGui::Indent();
             draw(component, "oui");
+            compRef.set(component);
             ImGui::Unindent();
         }
     }
