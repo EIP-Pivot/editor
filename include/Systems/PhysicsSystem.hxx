@@ -1,11 +1,7 @@
 #pragma once
 
-#include "pivot/ecs/Core/System.hxx"
+#include <pivot/ecs/Core/Systems/description.hxx>
 
-class PhysicsSystem : public System
-{
-public:
-    void Update(float dt);
+using namespace pivot::ecs;
 
-    Signature getSignature();
-};
+void physicsSystem(const systems::Description &, systems::Description::systemArgs &, const event::Event &);

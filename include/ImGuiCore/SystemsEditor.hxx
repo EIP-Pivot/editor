@@ -6,32 +6,18 @@
 #include "Systems/PhysicsSystem.hxx"
 
 #include <pivot/ecs/Core/SceneManager.hxx>
+#include <pivot/ecs/Core/Systems/index.hxx>
 
 extern SceneManager gSceneManager;
+
+using namespace pivot::ecs::systems;
 
 class SystemsEditor
 {
 public:
     void create();
-    void addSystem();
-
-    template <typename T>
-    void addSystem()
-    {
-        auto system = gSceneManager.getCurrentLevel().RegisterSystem<T>();
-        gSceneManager.getCurrentLevel().SetSystemSignature<T>(system->getSignature());
-        system->Init();
-    }
 private:
-    template <typename T>
-    void displaySystem(std::string name)
-    {
-        if (gSceneManager.getCurrentLevel().hasSystem<T>()) {
-            if (ImGui::TreeNode(name.c_str())) {
-                ImGui::TreePop();
-            }
-        }
-    }
+    void displaySystem();
 
     void createPopUp();
 };

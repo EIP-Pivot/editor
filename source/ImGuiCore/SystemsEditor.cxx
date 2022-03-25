@@ -3,7 +3,7 @@
 void SystemsEditor::create()
 {
     ImGui::Begin("Systems");
-    displaySystem<PhysicsSystem>("Physics system");
+    displaySystem();
     if (ImGui::Button("Add System")) { ImGui::OpenPopup("AddSystem"); }
     createPopUp();
     ImGui::End();
@@ -11,10 +11,21 @@ void SystemsEditor::create()
 
 void SystemsEditor::createPopUp()
 {
+    auto &sm = gSceneManager.getCurrentLevel().getSystemManager();
     if (ImGui::BeginPopup("AddSystem")) {
-        if (!gSceneManager.getCurrentLevel().hasSystem<PhysicsSystem>()) {
-            if (ImGui::MenuItem("Physics system")) { addSystem<PhysicsSystem>(); }
+        for (const auto &[name, description]: GlobalIndex::getSingleton()) {
+            auto used = sm.getSystemUsed();
+            if (std::find(used.begin(), used.end(), name) == used.end())
+                if (ImGui::MenuItem(name.c_str())) sm.useSystem(name);
         }
         ImGui::EndPopup();
+    }
+}
+
+void SystemsEditor::displaySystem()
+{
+    auto &sm = gSceneManager.getCurrentLevel().getSystemManager();
+    for (const auto &system: sm.getSystemUsed()) {
+        if (ImGui::TreeNode(system.c_str())) ImGui::TreePop();
     }
 }

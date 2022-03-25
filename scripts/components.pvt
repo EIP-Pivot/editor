@@ -1,0 +1,26 @@
+component Najo
+    Vector3 position
+    Number note
+
+component Thomas
+    String leopard
+    Number QI
+
+component ZAC
+    Number PEPETTE
+    Number QI
+
+component Position
+    Number pos_x
+    Number pos_y
+    Number pos_z
+
+component Velocity
+    Number vel_x
+    Number vel_y
+    Number vel_z
+
+system onTickPhysics(anyEntity<Position, Velocity>)
+    anyEntity.Position.pos_x = anyEntity.Position.pos_x + anyEntity.Velocity.vel_x
+    anyEntity.Position.pos_y = anyEntity.Position.pos_y + anyEntity.Velocity.vel_y
+    anyEntity.Position.pos_z = anyEntity.Position.pos_z + anyEntity.Velocity.vel_z

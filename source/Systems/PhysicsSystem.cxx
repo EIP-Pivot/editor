@@ -1,38 +1,28 @@
 #include "Systems/PhysicsSystem.hxx"
-#include "pivot/ecs/Components/Gravity.hxx"
-#include "pivot/ecs/Components/RigidBody.hxx"
-#include <pivot/graphics/types/RenderObject.hxx>
 
-#include <pivot/ecs/Core/SceneManager.hxx>
+using namespace pivot::ecs;
 
-extern SceneManager gSceneManager;
-
-void PhysicsSystem::Update(float dt)
+void physicsSystem(const systems::Description &systemDescription, systems::Description::systemArgs &entities, const event::Event &event)
 {
-    for (auto const &entity: mEntities) {
-        auto &rigidBody = gSceneManager.getCurrentLevel().GetComponent<RigidBody>(entity);
-        auto &renderObject = gSceneManager.getCurrentLevel().GetComponent<RenderObject>(entity);
+    auto dt = (float)std::get<double>(event.payload);
+    for (auto combination: entities) {
+        auto gravity = combination[0].get();
+        auto rigidBody = combination[1].get();
+        auto najo = combination[2].get();
+        auto thomas = combination[3].get();
 
-        // Forces
-        auto const &gravity = gSceneManager.getCurrentLevel().GetComponent<Gravity>(entity);
+        auto &force = std::get<glm::vec3>(std::get<data::Record>(gravity).at("force"));
 
-        renderObject.objectInformation.transform.addPosition(rigidBody.velocity * dt);
+        auto &velocity = std::get<glm::vec3>(std::get<data::Record>(rigidBody).at("velocity"));
+        velocity += force * dt;
+        combination[1].set(rigidBody);
 
-        rigidBody.velocity += gravity.force * dt;
+        auto &note = std::get<double>(std::get<data::Record>(najo).at("note"));
+        note += 1 * dt;
+        combination[2].set(najo);
+
+        auto &qi = std::get<double>(std::get<data::Record>(thomas).at("QI"));
+        qi += note * dt;
+        combination[3].set(thomas);
     }
-}
-
-Signature PhysicsSystem::getSignature()
-{
-    if (!gSceneManager.getCurrentLevel().isRegister<RenderObject>())
-        gSceneManager.getCurrentLevel().RegisterComponent<RenderObject>();
-    if (!gSceneManager.getCurrentLevel().isRegister<Gravity>())
-        gSceneManager.getCurrentLevel().RegisterComponent<Gravity>();
-    if (!gSceneManager.getCurrentLevel().isRegister<RigidBody>())
-        gSceneManager.getCurrentLevel().RegisterComponent<RigidBody>();
-    Signature signature;
-    signature.set(gSceneManager.getCurrentLevel().GetComponentType<Gravity>());
-    signature.set(gSceneManager.getCurrentLevel().GetComponentType<RigidBody>());
-    signature.set(gSceneManager.getCurrentLevel().GetComponentType<RenderObject>());
-    return signature;
 }

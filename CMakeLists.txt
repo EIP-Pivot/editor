@@ -3,7 +3,12 @@ project(user-interface)
 
 include(FetchContent)
 
-set(CMAKE_CXX_STANDARD 20)
+if(MSVC)
+    # see https://gitlab.kitware.com/cmake/cmake/-/issues/22606
+    set(CMAKE_CXX_STANDARD 23)
+else()
+    set(CMAKE_CXX_STANDARD 20)
+endif()
 set(CMAKE_CXX_STANDARD_REQUIRED ON)
 
 message(STATUS "Looking for lld")
@@ -23,7 +28,7 @@ if (LOCAL_PIVOT_DIRECTORY STREQUAL "")
     FetchContent_Declare(
         pivot
         GIT_REPOSITORY https://github.com/EIP-Pivot/pivot.git
-        GIT_TAG v0.1.0-a.2
+        GIT_TAG c1f3b50a477909dfbdaf800794096d8375089656
     )
     if (NOT pivot_POPULATED)
         message(STATUS "Populating pivot")
